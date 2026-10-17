@@ -10,27 +10,21 @@ struct SetupView: View {
             VStack(alignment: .leading, spacing: 14) {
                 header
                 VStack(spacing: 0) {
-                    SourceRow(icon: "display", title: "Display", value: setup.display?.name ?? "None") {
-                        ForEach(setup.displays) { display in
-                            Button(display.name) { setup.displayID = display.id }
-                        }
-                    }
+                    SourceRow(icon: "display", title: "Display", selection: $setup.displayID, options: setup.displays.map { ($0.id, $0.name) })
                     Divider().overlay(.hairline)
-                    SourceRow(icon: "video.fill", title: "Camera", value: name(of: setup.cameraID, in: setup.cameras, none: "No camera")) {
-                        Button("No camera") { setup.cameraID = nil }
-                        Divider()
-                        ForEach(setup.cameras) { camera in
-                            Button(camera.name) { setup.cameraID = camera.id }
-                        }
-                    }
+                    SourceRow(
+                        icon: "video.fill",
+                        title: "Camera",
+                        selection: Binding(get: { setup.cameraID }, set: setup.chooseCamera),
+                        options: [(nil, "No camera")] + setup.cameras.map { ($0.id, $0.name) }
+                    )
                     Divider().overlay(.hairline)
-                    SourceRow(icon: "mic.fill", title: "Microphone", value: name(of: setup.microphoneID, in: setup.microphones, none: "No microphone")) {
-                        Button("No microphone") { setup.microphoneID = nil }
-                        Divider()
-                        ForEach(setup.microphones) { microphone in
-                            Button(microphone.name) { setup.microphoneID = microphone.id }
-                        }
-                    }
+                    SourceRow(
+                        icon: "mic.fill",
+                        title: "Microphone",
+                        selection: Binding(get: { setup.microphoneID }, set: setup.chooseMicrophone),
+                        options: [(nil, "No microphone")] + setup.microphones.map { ($0.id, $0.name) }
+                    )
                     Divider().overlay(.hairline)
                     ToggleRow(icon: "speaker.wave.2.fill", title: "System audio", isOn: $setup.systemAudio)
                 }
@@ -55,7 +49,7 @@ struct SetupView: View {
                 .disabled(!setup.canRecord)
             }
             .padding(16)
-            .frame(width: 320)
+            .frame(width: 340)
         }
         .padding(20)
         .onChange(of: setup.cameraID) { model.cameraSelectionChanged() }
@@ -82,21 +76,23 @@ struct SetupView: View {
             .keyboardShortcut(.cancelAction)
         }
     }
-
-    private func name(of id: String?, in devices: [MediaDevice], none: String) -> String {
-        devices.first { $0.id == id }?.name ?? none
-    }
 }
 
-private struct SourceRow<Options: View>: View {
+private struct SourceRow<Value: Hashable>: View {
     let icon: String
     let title: String
-    let value: String
-    @ViewBuilder let options: Options
+    @Binding var selection: Value
+    let options: [(value: Value, name: String)]
 
     var body: some View {
         Menu {
-            options
+            Picker(title, selection: $selection) {
+                ForEach(options, id: \.value) { option in
+                    Text(option.name).tag(option.value)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
         } label: {
             HStack(spacing: 10) {
                 SourceIcon(name: icon)
@@ -104,7 +100,7 @@ private struct SourceRow<Options: View>: View {
                     Text(title)
                         .font(.caption)
                         .foregroundStyle(.secondaryText)
-                    Text(value)
+                    Text(options.first { $0.value == selection }?.name ?? "None")
                         .font(.label)
                         .foregroundStyle(.primaryText)
                         .lineLimit(1)
@@ -173,8 +169,9 @@ private struct PermissionRow: View {
                 Text(permission.reason)
                     .font(.caption)
                     .foregroundStyle(.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             Button("Allow") { Task { await permission.request() } }
                 .buttonStyle(.quiet)
         }

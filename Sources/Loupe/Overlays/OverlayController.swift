@@ -9,7 +9,6 @@ import SwiftUI
     private var countdown: OverlayPanel?
     private var controlBar: OverlayPanel?
 
-    private static let bubbleInset = CameraBubbleView.shadowInset
     private static let margin: CGFloat = 28
 
     init(model: AppModel) {
@@ -45,7 +44,8 @@ import SwiftUI
 
     func showBubble() {
         let screen = screen
-        let origin = NSPoint(x: screen.minX + Self.margin - Self.bubbleInset, y: screen.minY + Self.margin - Self.bubbleInset)
+        let inset = (CameraBubbleView.extent - model.setup.bubbleSize.diameter) / 2
+        let origin = NSPoint(x: screen.minX + Self.margin - inset, y: screen.minY + Self.margin - inset)
         if let bubble, bubble.isVisible, screen.contains(bubble.frame.origin) {
             return
         }

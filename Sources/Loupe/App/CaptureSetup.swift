@@ -16,7 +16,6 @@ enum BubbleSize: String, CaseIterable, Identifiable {
         }
     }
 
-    var label: String { String(rawValue.prefix(1)).uppercased() }
 }
 
 @MainActor @Observable final class CaptureSetup {
@@ -24,20 +23,25 @@ enum BubbleSize: String, CaseIterable, Identifiable {
     private(set) var cameras: [MediaDevice] = []
     private(set) var microphones: [MediaDevice] = []
     private(set) var missingPermissions: [Permission] = []
+    private(set) var cameraID: String?
+    private(set) var microphoneID: String?
 
     var displayID: CGDirectDisplayID?
-    var cameraID: String? { didSet { defaults.set(cameraID ?? "", forKey: "cameraID") } }
-    var microphoneID: String? { didSet { defaults.set(microphoneID ?? "", forKey: "microphoneID") } }
-    var systemAudio: Bool { didSet { defaults.set(systemAudio, forKey: "systemAudio") } }
-    var bubbleSize: BubbleSize { didSet { defaults.set(bubbleSize.rawValue, forKey: "bubbleSize") } }
+    var systemAudio: Bool { didSet { defaults.set(systemAudio, forKey: Key.systemAudio) } }
+    var bubbleSize: BubbleSize { didSet { defaults.set(bubbleSize.rawValue, forKey: Key.bubbleSize) } }
 
     private let defaults = UserDefaults.standard
 
+    private enum Key {
+        static let camera = "preferredCamera"
+        static let microphone = "preferredMicrophone"
+        static let systemAudio = "systemAudio"
+        static let bubbleSize = "bubbleSize"
+    }
+
     init() {
-        cameraID = defaults.string(forKey: "cameraID").flatMap { $0.isEmpty ? nil : $0 }
-        microphoneID = defaults.string(forKey: "microphoneID").flatMap { $0.isEmpty ? nil : $0 }
-        systemAudio = defaults.object(forKey: "systemAudio") as? Bool ?? true
-        bubbleSize = defaults.string(forKey: "bubbleSize").flatMap(BubbleSize.init) ?? .medium
+        systemAudio = defaults.object(forKey: Key.systemAudio) as? Bool ?? true
+        bubbleSize = defaults.string(forKey: Key.bubbleSize).flatMap(BubbleSize.init) ?? .medium
     }
 
     var display: DisplayOption? {
@@ -48,27 +52,33 @@ enum BubbleSize: String, CaseIterable, Identifiable {
         !missingPermissions.contains(.screen)
     }
 
+    func chooseCamera(_ id: String?) {
+        defaults.set(id ?? "", forKey: Key.camera)
+        cameraID = id
+    }
+
+    func chooseMicrophone(_ id: String?) {
+        defaults.set(id ?? "", forKey: Key.microphone)
+        microphoneID = id
+    }
+
     func refresh() {
         update(\.displays, to: MediaDevices.displays)
         update(\.cameras, to: Permission.camera.isGranted ? MediaDevices.cameras : [])
         update(\.microphones, to: Permission.microphone.isGranted ? MediaDevices.microphones : [])
         update(\.missingPermissions, to: Permission.allCases.filter { !$0.isGranted })
+        update(\.cameraID, to: resolve(defaults.string(forKey: Key.camera), in: cameras, system: MediaDevices.systemCamera))
+        update(\.microphoneID, to: resolve(defaults.string(forKey: Key.microphone), in: microphones, system: MediaDevices.systemMicrophone))
 
         if displayID == nil || !displays.contains(where: { $0.id == displayID }) {
             displayID = NSScreen.main?.displayID ?? displays.first?.id
         }
-        if let cameraID, !cameras.contains(where: { $0.id == cameraID }) {
-            self.cameraID = cameras.first?.id
-        }
-        if let microphoneID, !microphones.contains(where: { $0.id == microphoneID }) {
-            self.microphoneID = microphones.first?.id
-        }
-        if defaults.string(forKey: "cameraID") == nil, let first = cameras.first {
-            cameraID = first.id
-        }
-        if defaults.string(forKey: "microphoneID") == nil, let first = microphones.first {
-            microphoneID = first.id
-        }
+    }
+
+    private func resolve(_ preference: String?, in devices: [MediaDevice], system: String?) -> String? {
+        if preference == "" { return nil }
+        let available = Set(devices.map(\.id))
+        return [preference, system, devices.first?.id].compactMap { $0 }.first(where: available.contains)
     }
 
     private func update<Value: Equatable>(_ keyPath: ReferenceWritableKeyPath<CaptureSetup, Value>, to value: Value) {

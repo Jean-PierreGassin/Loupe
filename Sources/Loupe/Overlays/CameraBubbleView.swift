@@ -3,9 +3,10 @@ import SwiftUI
 
 struct CameraBubbleView: View {
     static let shadowInset: CGFloat = 28
+    static let extent = BubbleSize.allCases.map(\.diameter).max()! + shadowInset * 2
 
     @Environment(AppModel.self) private var model
-    @State private var hovering = false
+    @Environment(PanelHover.self) private var hover
 
     var body: some View {
         @Bindable var setup = model.setup
@@ -17,23 +18,51 @@ struct CameraBubbleView: View {
             .overlay(Circle().strokeBorder(.white.opacity(0.92), lineWidth: 3))
             .shadow(color: .black.opacity(0.45), radius: 16, y: 8)
             .overlay(alignment: .bottom) {
-                Picker("Size", selection: $setup.bubbleSize) {
-                    ForEach(BubbleSize.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 96)
-                .padding(4)
-                .background(.ultraThinMaterial, in: .capsule)
-                .padding(.bottom, 10)
-                .opacity(hovering ? 1 : 0)
+                BubbleSizePicker(selection: $setup.bubbleSize)
+                    .padding(.bottom, 12)
+                    .opacity(hover.isHovering ? 1 : 0)
+                    .offset(y: hover.isHovering ? 0 : 6)
             }
-            .padding(Self.shadowInset)
-            .contentShape(.circle.inset(by: Self.shadowInset))
-            .onHover { hovering = $0 }
+            .contentShape(.circle)
             .gesture(WindowDragGesture())
+            .frame(width: Self.extent, height: Self.extent)
             .animation(.snappy(duration: 0.25), value: diameter)
-            .animation(.easeOut(duration: 0.15), value: hovering)
+            .animation(.easeOut(duration: 0.18), value: hover.isHovering)
+    }
+}
+
+private struct BubbleSizePicker: View {
+    @Binding var selection: BubbleSize
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(BubbleSize.allCases) { size in
+                Button { selection = size } label: {
+                    Circle()
+                        .fill(.white.opacity(selection == size ? 1 : 0.55))
+                        .frame(width: size.glyph, height: size.glyph)
+                        .frame(width: 24, height: 24)
+                        .background(.white.opacity(selection == size ? 0.18 : 0), in: .circle)
+                        .contentShape(.circle)
+                }
+                .buttonStyle(.plain)
+                .help("\(size.rawValue.capitalized) bubble")
+            }
+        }
+        .padding(3)
+        .background(.black.opacity(0.35), in: .capsule)
+        .background(.ultraThinMaterial, in: .capsule)
+        .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
+    }
+}
+
+private extension BubbleSize {
+    var glyph: CGFloat {
+        switch self {
+        case .small: 6
+        case .medium: 9
+        case .large: 12
+        }
     }
 }
 
@@ -62,6 +91,8 @@ struct CameraPreview: NSViewRepresentable {
 
         @available(*, unavailable)
         required init?(coder: NSCoder) { fatalError() }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
         override func layout() {
             super.layout()

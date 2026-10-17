@@ -21,6 +21,14 @@ enum MediaDevices {
         devices(of: [.microphone, .external], mediaType: .audio)
     }
 
+    static var systemCamera: String? {
+        AVCaptureDevice.default(for: .video)?.uniqueID
+    }
+
+    static var systemMicrophone: String? {
+        AVCaptureDevice.default(for: .audio)?.uniqueID
+    }
+
     @MainActor static var displays: [DisplayOption] {
         NSScreen.screens.compactMap { screen in
             screen.displayID.map { DisplayOption(id: $0, name: screen.localizedName, frame: screen.frame) }
