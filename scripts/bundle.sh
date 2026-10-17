@@ -1,17 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# LOUPE_VERSION            version string, defaults to 0.0.0-dev
+# LOUPE_DISTRIBUTION=1     universal binary, signed per build instead of pinned to the identifier
+# LOUPE_SIGNING_IDENTITY   Developer ID identity; implies a distribution build with the hardened runtime
+
 root="$(cd "$(dirname "$0")/.." && pwd)"
 app="$root/dist/Loupe.app"
 identifier="io.github.jean-pierregassin.Loupe"
+version="${LOUPE_VERSION:-0.0.0-dev}"
+build="$(git -C "$root" rev-list --count HEAD 2>/dev/null || echo 1)"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
-swift build --package-path "$root" -c release
+build_args=(--package-path "$root" -c release)
+if [[ -n "${LOUPE_DISTRIBUTION:-}${LOUPE_SIGNING_IDENTITY:-}" ]]; then
+  build_args+=(--arch arm64 --arch x86_64)
+fi
+swift build "${build_args[@]}"
+binary="$(swift build "${build_args[@]}" --show-bin-path)/Loupe"
 
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$root/.build/release/Loupe" "$app/Contents/MacOS/Loupe"
+cp "$binary" "$app/Contents/MacOS/Loupe"
 
 swift "$root/scripts/make-icon.swift" "$root/assets/icon.svg" "$work/icon.png"
 mkdir "$work/AppIcon.iconset"
@@ -32,11 +43,12 @@ cat > "$app/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>Loupe</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>$version</string>
+  <key>CFBundleVersion</key><string>$build</string>
   <key>LSMinimumSystemVersion</key><string>15.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.video</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSHumanReadableCopyright</key><string>MIT License</string>
   <key>NSCameraUsageDescription</key><string>Loupe shows your camera in a bubble while you record.</string>
   <key>NSMicrophoneUsageDescription</key><string>Loupe records your voice with your screen.</string>
 </dict>
@@ -45,6 +57,8 @@ PLIST
 
 if [[ -n "${LOUPE_SIGNING_IDENTITY:-}" ]]; then
   codesign --force --options runtime --timestamp --entitlements "$root/scripts/Loupe.entitlements" --sign "$LOUPE_SIGNING_IDENTITY" "$app"
+elif [[ -n "${LOUPE_DISTRIBUTION:-}" ]]; then
+  codesign --force --sign - --identifier "$identifier" "$app"
 else
   codesign --force --sign - --identifier "$identifier" --requirements "=designated => identifier \"$identifier\"" "$app"
 fi
