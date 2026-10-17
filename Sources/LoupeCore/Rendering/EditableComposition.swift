@@ -35,7 +35,8 @@ public struct EditableComposition: @unchecked Sendable {
             if try await AudioMixdown.render(audioTracks, of: source, range: range, to: mixdown),
                let mixed = try await mixedAsset.loadTracks(withMediaType: .audio).first,
                let target = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
-                try target.insertTimeRange(try await mixed.load(.timeRange), of: mixed, at: .zero)
+                let mixedRange = try await mixed.load(.timeRange)
+                try target.insertTimeRange(mixedRange, of: mixed, at: mixedRange.start)
             }
         } else {
             for track in audioTracks {

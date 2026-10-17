@@ -87,6 +87,25 @@ import UniformTypeIdentifiers
         #expect(abs(try await asset.load(.duration).seconds - 4) < 0.2)
     }
 
+    @Test func trimmedMixdownStaysInSync() async throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let video = directory.appending(path: "silent.mov")
+        let recording = directory.appending(path: "voiced.mov")
+        let output = directory.appending(path: "trimmed-voiced.mp4")
+        try await SyntheticRecording.write(to: video, duration: 4)
+        try await SyntheticRecording.addingAudioTracks(2, to: video, output: recording)
+        var trimmed = project
+        trimmed.trimStart = 1
+        trimmed.trimEnd = 3
+
+        try await Exporter.export(recording: recording, project: trimmed, quality: .hd, to: output) { _ in }
+
+        let audio = try #require(try await AVURLAsset(url: output).loadTracks(withMediaType: .audio).first)
+        let range = try await audio.load(.timeRange)
+        #expect(range.start.seconds < 0.05)
+        #expect(abs(range.duration.seconds - 2) < 0.1)
+    }
+
     private func saveFrames(of asset: AVAsset, at times: [Double]) async throws {
         guard let folder = ProcessInfo.processInfo.environment["LOUPE_FRAMES_DIR"].map(URL.init(fileURLWithPath:)) else { return }
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

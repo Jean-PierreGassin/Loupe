@@ -28,16 +28,24 @@ enum AudioMixdown {
         writer.startSession(atSourceTime: range.start)
 
         var wroteSamples = false
-        while let buffer = output.copyNextSampleBuffer() {
-            while !input.isReadyForMoreMediaData {
-                try await Task.sleep(for: .milliseconds(5))
+        do {
+            while let buffer = output.copyNextSampleBuffer() {
+                while !input.isReadyForMoreMediaData {
+                    guard writer.status == .writing else { throw writer.error ?? LoupeError.compositionFailed }
+                    try await Task.sleep(for: .milliseconds(5))
+                }
+                try Task.checkCancellation()
+                guard input.append(buffer) else { throw writer.error ?? LoupeError.compositionFailed }
+                wroteSamples = true
             }
-            guard input.append(buffer) else { break }
-            wroteSamples = true
-        }
-        guard reader.status != .failed, wroteSamples else {
+            if reader.status == .failed { throw reader.error ?? LoupeError.compositionFailed }
+        } catch {
+            reader.cancelReading()
             writer.cancelWriting()
-            if let error = reader.error { throw error }
+            throw error
+        }
+        guard wroteSamples else {
+            writer.cancelWriting()
             return false
         }
         input.markAsFinished()
