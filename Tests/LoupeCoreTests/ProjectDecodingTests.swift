@@ -23,6 +23,25 @@ import Testing
         #expect(project.style.camera.shape == .circle)
     }
 
+    @Test func dropsOnlyTheElementsItCannotRead() throws {
+        let json = """
+        {
+          "id": "6F9619FF-8B86-D011-B42D-00C04FC964FF",
+          "duration": 4,
+          "screenWidth": 1440,
+          "screenHeight": 900,
+          "events": [
+            { "t": 1, "kind": "click", "position": { "x": 0.5, "y": 0.5 } },
+            { "t": 2, "kind": "scroll", "position": { "x": 0.5, "y": 0.5 } },
+            { "t": 3, "kind": "key", "position": { "x": 0.2, "y": 0.4 } }
+          ]
+        }
+        """
+        let project = try JSONDecoder().decode(Project.self, from: Data(json.utf8))
+
+        #expect(project.events.map(\.t) == [1, 3])
+    }
+
     @Test func roundTripsEveryField() throws {
         var project = Project(
             title: "Round trip",
