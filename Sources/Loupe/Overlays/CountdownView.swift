@@ -13,12 +13,14 @@ struct CountdownView: View {
                 .background(.ultraThinMaterial, in: .circle)
                 .background(.black.opacity(0.3), in: .circle)
                 .overlay(Circle().strokeBorder(.white.opacity(0.15)))
-            Text("Press \(GlobalHotKey.Shortcut.record.symbol) to cancel")
-                .font(.label)
-                .foregroundStyle(.white.opacity(0.85))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(.black.opacity(0.45), in: .capsule)
+            if let hint = model.shortcutHint {
+                Text("Press \(hint) to cancel")
+                    .font(.label)
+                    .foregroundStyle(.white.opacity(0.85))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.black.opacity(0.45), in: .capsule)
+            }
         }
         .padding(30)
         .animation(.snappy, value: remaining)

@@ -50,7 +50,9 @@ struct NewRecordingButton: View {
             HStack(spacing: 8) {
                 Circle().fill(.white).frame(width: 8, height: 8)
                 Text("New Recording")
-                Text(GlobalHotKey.Shortcut.record.symbol).foregroundStyle(.white.opacity(0.6))
+                if let hint = model.shortcutHint {
+                    Text(hint).foregroundStyle(.white.opacity(0.6))
+                }
             }
         }
         .buttonStyle(.recording)

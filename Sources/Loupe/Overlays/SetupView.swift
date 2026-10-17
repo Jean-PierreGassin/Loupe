@@ -41,7 +41,9 @@ struct SetupView: View {
                         Circle().fill(.white).frame(width: 9, height: 9)
                         Text("Start Recording")
                         Spacer()
-                        Text(GlobalHotKey.Shortcut.record.symbol).foregroundStyle(.white.opacity(0.6))
+                        if let hint = model.shortcutHint {
+                            Text(hint).foregroundStyle(.white.opacity(0.6))
+                        }
                     }
                     .frame(maxWidth: .infinity)
                 }
