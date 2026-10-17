@@ -66,6 +66,10 @@ import LoupeCore
         }
     }
 
+    func bubbleSizeChanged() {
+        overlays.keepBubbleOnScreen()
+    }
+
     func displaySelectionChanged() {
         overlays.showSetup()
         if setup.cameraID != nil {

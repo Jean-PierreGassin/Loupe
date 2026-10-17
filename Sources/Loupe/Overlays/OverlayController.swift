@@ -44,15 +44,29 @@ import SwiftUI
 
     func showBubble() {
         let screen = screen
-        let inset = (CameraBubbleView.extent - model.setup.bubbleSize.diameter) / 2
-        let origin = NSPoint(x: screen.minX + Self.margin - inset, y: screen.minY + Self.margin - inset)
-        if let bubble, bubble.isVisible, screen.contains(bubble.frame.origin) {
+        if let circle = bubbleCircle, screen.contains(circle) {
             return
         }
         bubble?.close()
+        let inset = (CameraBubbleView.extent - model.setup.bubbleSize.diameter) / 2
         let panel = OverlayPanel { CameraBubbleView().environment(model) }
-        panel.present { _ in origin }
+        panel.present { _ in NSPoint(x: screen.minX + Self.margin - inset, y: screen.minY + Self.margin - inset) }
         bubble = panel
+    }
+
+    func keepBubbleOnScreen() {
+        guard let bubble, let circle = bubbleCircle else { return }
+        let screen = screen.insetBy(dx: 8, dy: 8)
+        let dx = max(0, screen.minX - circle.minX) - max(0, circle.maxX - screen.maxX)
+        let dy = max(0, screen.minY - circle.minY) - max(0, circle.maxY - screen.maxY)
+        guard dx != 0 || dy != 0 else { return }
+        bubble.animator().setFrameOrigin(NSPoint(x: bubble.frame.minX + dx, y: bubble.frame.minY + dy))
+    }
+
+    private var bubbleCircle: NSRect? {
+        guard let bubble, bubble.isVisible else { return nil }
+        let diameter = model.setup.bubbleSize.diameter
+        return NSRect(x: bubble.frame.midX - diameter / 2, y: bubble.frame.midY - diameter / 2, width: diameter, height: diameter)
     }
 
     func hideBubble() {

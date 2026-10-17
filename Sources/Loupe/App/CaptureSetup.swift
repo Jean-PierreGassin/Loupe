@@ -37,11 +37,18 @@ enum BubbleSize: String, CaseIterable, Identifiable {
         static let microphone = "preferredMicrophone"
         static let systemAudio = "systemAudio"
         static let bubbleSize = "bubbleSize"
+        static let legacy = [camera: "cameraID", microphone: "microphoneID"]
     }
 
     init() {
         systemAudio = defaults.object(forKey: Key.systemAudio) as? Bool ?? true
         bubbleSize = defaults.string(forKey: Key.bubbleSize).flatMap(BubbleSize.init) ?? .medium
+        for (key, legacy) in Key.legacy {
+            if defaults.string(forKey: key) == nil, defaults.string(forKey: legacy) == "" {
+                defaults.set("", forKey: key)
+            }
+            defaults.removeObject(forKey: legacy)
+        }
     }
 
     var display: DisplayOption? {

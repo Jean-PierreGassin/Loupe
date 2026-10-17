@@ -28,6 +28,7 @@ struct CameraBubbleView: View {
             .frame(width: Self.extent, height: Self.extent)
             .animation(.snappy(duration: 0.25), value: diameter)
             .animation(.easeOut(duration: 0.18), value: hover.isHovering)
+            .onChange(of: setup.bubbleSize) { model.bubbleSizeChanged() }
     }
 }
 
