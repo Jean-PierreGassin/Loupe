@@ -7,16 +7,7 @@ struct InspectorView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                if let zoom = editor.selectedZoom {
-                    InspectorSection("Selected Zoom") {
-                        LabeledSlider("Depth", value: zoomScale(zoom), in: 1.25...4, format: "%.1f×")
-                        Button(role: .destructive, action: editor.deleteSelectedZoom) {
-                            Label("Remove Zoom", systemImage: "trash")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.quiet)
-                    }
-                }
+                zoomSection
 
                 InspectorSection("Background") {
                     BackgroundPicker(selection: $editor.project.style.background)
@@ -33,26 +24,13 @@ struct InspectorView: View {
                     InspectorSection("Camera") {
                         InspectorToggle("Show camera", isOn: $editor.project.style.camera.visible)
                         Group {
-                            Picker("Shape", selection: $editor.project.style.camera.shape) {
-                                Text("Circle").tag(CameraStyle.Shape.circle)
-                                Text("Rounded").tag(CameraStyle.Shape.rounded)
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
+                            SegmentedPicker(selection: $editor.project.style.camera.shape, options: [(.circle, "Circle"), (.rounded, "Rounded")])
                             LabeledSlider("Size", value: cameraSize, in: 0.12...0.4, format: percent)
                             CornerPicker(camera: $editor.project.style.camera, aspect: editor.project.aspect)
                             InspectorToggle("Mirror", isOn: $editor.project.style.camera.mirror)
                         }
                         .disabled(!editor.project.style.camera.visible)
                     }
-                }
-
-                InspectorSection("Zoom") {
-                    InspectorToggle("Auto zoom on clicks and typing", isOn: Binding(get: { editor.project.autoZoom }, set: editor.setAutoZoom))
-                    LabeledSlider("Default depth", value: Binding(get: { editor.project.defaultZoomScale }, set: editor.setDefaultZoomScale), in: 1.25...3.5, format: "%.1f×")
-                    Text(zoomSummary)
-                        .font(.caption)
-                        .foregroundStyle(.tertiaryText)
                 }
 
                 InspectorSection("Cursor") {
@@ -68,10 +46,38 @@ struct InspectorView: View {
 
     private let percent = "%.0f%%"
 
+    @ViewBuilder private var zoomSection: some View {
+        if let zoom = editor.selectedZoom {
+            InspectorSection("Selected Zoom") {
+                LabeledSlider("Depth", value: zoomScale(zoom), in: 1.25...4, format: "%.1f×")
+                HStack {
+                    Button { editor.selectedZoomID = nil } label: {
+                        Label("Done", systemImage: "checkmark")
+                            .frame(maxWidth: .infinity)
+                    }
+                    Button(role: .destructive, action: editor.deleteSelectedZoom) {
+                        Label("Remove", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.quiet)
+            }
+        } else {
+            InspectorSection("Zoom") {
+                InspectorToggle("Auto zoom on clicks and typing", isOn: Binding(get: { editor.project.autoZoom }, set: editor.setAutoZoom))
+                LabeledSlider("Default depth", value: Binding(get: { editor.project.defaultZoomScale }, set: editor.setDefaultZoomScale), in: 1.25...3.5, format: "%.1f×")
+                Text(zoomSummary)
+                    .font(.caption)
+                    .foregroundStyle(.tertiaryText)
+            }
+        }
+    }
+
     private var zoomSummary: String {
         let count = editor.project.zooms.count
         let clicks = editor.project.events.count { $0.kind == .click }
-        return "\(count) zoom\(count == 1 ? "" : "s") · \(clicks) click\(clicks == 1 ? "" : "s") captured"
+        let keys = editor.project.events.count { $0.kind == .key }
+        return "\(count) zoom\(count == 1 ? "" : "s") from \(clicks) click\(clicks == 1 ? "" : "s") and \(keys) keystroke\(keys == 1 ? "" : "s")"
     }
 
     private var cameraSize: Binding<Double> {

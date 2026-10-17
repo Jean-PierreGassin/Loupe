@@ -76,6 +76,39 @@ struct InspectorToggle: View {
     }
 }
 
+struct SegmentedPicker<Value: Hashable>: View {
+    @Binding var selection: Value
+    let options: [(value: Value, title: String)]
+    @Namespace private var namespace
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(options, id: \.value) { option in
+                let isSelected = option.value == selection
+                Button { selection = option.value } label: {
+                    Text(option.title)
+                        .font(.label)
+                        .foregroundStyle(isSelected ? .primaryText : .secondaryText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 26)
+                        .background {
+                            if isSelected {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(.white.opacity(0.12))
+                                    .matchedGeometryEffect(id: "selection", in: namespace)
+                            }
+                        }
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(2)
+        .background(.white.opacity(0.05), in: .rect(cornerRadius: 8))
+        .animation(.snappy(duration: 0.2), value: selection)
+    }
+}
+
 struct BackgroundPicker: View {
     @Binding var selection: BackgroundPreset
 

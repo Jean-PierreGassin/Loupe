@@ -59,7 +59,7 @@ struct RecordingCard: View {
                     .opacity(hovering ? 1 : 0)
                     .scaleEffect(hovering ? 1 : 0.85)
             }
-            .overlay(alignment: .bottomTrailing) {
+            .overlay(alignment: .bottomLeading) {
                 Text(recording.project.trimmedDuration.timecode)
                     .font(.timecode)
                     .foregroundStyle(.white)

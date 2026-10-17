@@ -4,16 +4,28 @@ struct PrimaryButtonStyle: ButtonStyle {
     var tint: Color = .brand
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.label)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 14)
-            .frame(height: 32)
-            .background(tint.gradient, in: .rect(cornerRadius: 9))
-            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.18)))
-            .shadow(color: tint.opacity(0.35), radius: configuration.isPressed ? 2 : 8, y: 2)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.snappy(duration: 0.15), value: configuration.isPressed)
+        PrimaryButton(configuration: configuration, tint: tint)
+    }
+
+    private struct PrimaryButton: View {
+        let configuration: Configuration
+        let tint: Color
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            configuration.label
+                .font(.label)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .frame(height: 32)
+                .background(tint.gradient, in: .rect(cornerRadius: 9))
+                .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.18)))
+                .shadow(color: tint.opacity(isEnabled ? 0.35 : 0), radius: configuration.isPressed ? 2 : 8, y: 2)
+                .saturation(isEnabled ? 1 : 0)
+                .opacity(isEnabled ? 1 : 0.4)
+                .scaleEffect(configuration.isPressed ? 0.97 : 1)
+                .animation(.snappy(duration: 0.15), value: configuration.isPressed)
+        }
     }
 }
 
