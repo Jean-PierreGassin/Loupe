@@ -64,11 +64,8 @@ private struct EditorWorkspace: View {
             }
             .buttonStyle(.quiet)
 
-            TextField("Title", text: $editor.project.title)
-                .textFieldStyle(.plain)
-                .font(.heading)
-                .foregroundStyle(.primaryText)
-                .frame(maxWidth: 360)
+            TitleField(title: $editor.project.title)
+                .frame(maxWidth: 360, alignment: .leading)
 
             Spacer()
 
@@ -110,6 +107,7 @@ private struct EditorKeyboardShortcuts: ViewModifier {
         case 123: editor.seek(to: editor.currentTime - step)
         case 124: editor.seek(to: editor.currentTime + step)
         case 6: editor.addZoom()
+        case 53 where editor.selectedZoomID != nil: editor.selectedZoomID = nil
         default: return false
         }
         return true

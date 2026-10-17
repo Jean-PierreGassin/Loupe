@@ -1,6 +1,5 @@
 import AppKit
 import AVFoundation
-import Combine
 import LoupeCore
 
 @MainActor @Observable final class EditorModel {
@@ -32,7 +31,7 @@ import LoupeCore
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var rebuildTask: Task<Void, Never>?
-    @ObservationIgnored private var statusTask: Task<Void, Never>?
+    @ObservationIgnored private var statusObservation: NSKeyValueObservation?
 
     init(recording: Recording, library: RecordingLibrary) {
         self.recording = recording
@@ -59,6 +58,11 @@ import LoupeCore
             }
             player.play()
         }
+    }
+
+    func scrub(to time: Double) {
+        player.pause()
+        seek(to: time)
     }
 
     func seek(to time: Double) {
@@ -151,7 +155,7 @@ import LoupeCore
         player.pause()
         timeObserver.map(player.removeTimeObserver)
         timeObserver = nil
-        statusTask?.cancel()
+        statusObservation = nil
         saveTask?.cancel()
         save()
         let recording = recording
@@ -212,17 +216,15 @@ import LoupeCore
     }
 
     private func observePlayback() {
-        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 30), queue: .main) { [weak self] time in
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(value: 1, timescale: 60), queue: .main) { [weak self] time in
             MainActor.assumeIsolated {
-                guard let self, self.isPlaying else { return }
-                self.currentTime = time.seconds + self.project.trimStart
+                guard let self, self.player.rate != 0 else { return }
+                self.currentTime = (time.seconds + self.project.trimStart).clamped(to: self.project.trimStart...self.project.trimEnd)
             }
         }
-        let statuses = player.publisher(for: \.timeControlStatus).values
-        statusTask = Task { [weak self] in
-            for await status in statuses {
-                self?.isPlaying = status != .paused
-            }
+        statusObservation = player.observe(\.timeControlStatus, options: [.initial, .new]) { [weak self] player, _ in
+            let playing = player.timeControlStatus != .paused
+            Task { @MainActor in self?.isPlaying = playing }
         }
     }
 

@@ -14,7 +14,7 @@ struct ClipTrack: View {
         ZStack(alignment: .leading) {
             filmstrip
                 .contentShape(.rect)
-                .gesture(DragGesture(minimumDistance: 0).onChanged { editor.seek(to: scale.time($0.location.x)) })
+                .gesture(DragGesture(minimumDistance: 0).onChanged { editor.scrub(to: scale.time($0.location.x)) })
             Rectangle()
                 .fill(.black.opacity(0.62))
                 .frame(width: start)
@@ -75,10 +75,10 @@ struct ClipTrack: View {
                     let time = scale.time(value.location.x)
                     if edge == .leading {
                         editor.project.trimStart = max(0, min(time, editor.project.trimEnd - Self.minimumLength))
-                        editor.seek(to: editor.project.trimStart)
+                        editor.scrub(to: editor.project.trimStart)
                     } else {
                         editor.project.trimEnd = min(editor.project.duration, max(time, editor.project.trimStart + Self.minimumLength))
-                        editor.seek(to: editor.project.trimEnd)
+                        editor.scrub(to: editor.project.trimEnd)
                     }
                 }
         )

@@ -18,8 +18,8 @@ struct TimelineScale {
 struct EditorTimeline: View {
     static let rulerHeight: CGFloat = 20
     static let clipHeight: CGFloat = 58
-    static let zoomHeight: CGFloat = 34
-    static let spacing: CGFloat = 8
+    static let zoomHeight: CGFloat = 36
+    static let spacing: CGFloat = 10
 
     let editor: EditorModel
 
@@ -46,7 +46,7 @@ struct EditorTimeline: View {
 
     private func scrub(_ scale: TimelineScale) -> some Gesture {
         DragGesture(minimumDistance: 0)
-            .onChanged { editor.seek(to: scale.time($0.location.x)) }
+            .onChanged { editor.scrub(to: scale.time($0.location.x)) }
     }
 }
 

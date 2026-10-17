@@ -10,7 +10,10 @@ struct PreviewStage: View {
             let size = fit(aspect: editor.project.aspect, in: proxy.size)
             ZStack {
                 PlayerSurface(player: editor.player)
+                Color.clear
+                    .contentShape(.rect)
                     .onTapGesture(perform: editor.togglePlayback)
+                PlayIndicator(isPlaying: editor.isPlaying)
                 if editor.project.hasCamera, editor.project.style.camera.visible {
                     CameraHandle(editor: editor, stage: size)
                 }
@@ -36,6 +39,23 @@ struct PreviewStage: View {
     }
 }
 
+private struct PlayIndicator: View {
+    let isPlaying: Bool
+
+    var body: some View {
+        Image(systemName: "play.fill")
+            .font(.system(size: 22, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 60, height: 60)
+            .background(.black.opacity(0.35), in: .circle)
+            .background(.ultraThinMaterial, in: .circle)
+            .opacity(isPlaying ? 0 : 1)
+            .scaleEffect(isPlaying ? 1.2 : 1)
+            .animation(.snappy(duration: 0.2), value: isPlaying)
+            .allowsHitTesting(false)
+    }
+}
+
 private struct CameraHandle: View {
     let editor: EditorModel
     let stage: CGSize
@@ -52,7 +72,7 @@ private struct CameraHandle: View {
             .foregroundStyle(.white.opacity(hovering || dragging ? 0.9 : 0))
             .background(Circle().fill(.white.opacity(dragging ? 0.08 : 0.001)))
             .frame(width: diameter + 8, height: diameter + 8)
-            .position(x: center.x * stage.width, y: center.y * stage.height)
+            .contentShape(.circle)
             .onHover { hovering = $0 }
             .gesture(
                 DragGesture(coordinateSpace: .named(Self.space))
@@ -63,10 +83,11 @@ private struct CameraHandle: View {
                     }
                     .onEnded { _ in dragging = false }
             )
+            .help("Drag to move the camera")
+            .position(x: center.x * stage.width, y: center.y * stage.height)
             .frame(width: stage.width, height: stage.height)
             .coordinateSpace(.named(Self.space))
             .animation(.easeOut(duration: 0.15), value: hovering)
-            .help("Drag to move the camera")
     }
 
     private static let space = "stage"
@@ -96,6 +117,8 @@ struct PlayerSurface: NSViewRepresentable {
 
         @available(*, unavailable)
         required init?(coder: NSCoder) { fatalError() }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
         override func layout() {
             super.layout()
