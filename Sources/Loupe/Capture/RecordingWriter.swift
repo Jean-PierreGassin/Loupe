@@ -21,7 +21,7 @@ actor RecordingWriter {
     private let writer: AVAssetWriter
     private var inputs: [Track: AVAssetWriterInput] = [:]
     private var startTime: CMTime?
-    private var lastScreenTime = CMTime.zero
+    private var lastScreenFrame: CMSampleBuffer?
 
     init(url: URL, configuration: Configuration) throws {
         writer = try AVAssetWriter(outputURL: url, fileType: .mov)
@@ -35,10 +35,11 @@ actor RecordingWriter {
         for (track, settings) in tracks {
             let input = AVAssetWriterInput(mediaType: track == .screen || track == .camera ? .video : .audio, outputSettings: settings)
             input.expectsMediaDataInRealTime = true
+            guard writer.canAdd(input) else { throw RecordingError.unsupportedFormat }
             writer.add(input)
             inputs[track] = input
         }
-        writer.startWriting()
+        guard writer.startWriting() else { throw writer.error ?? RecordingError.unsupportedFormat }
     }
 
     nonisolated func receive(_ buffer: CMSampleBuffer, for track: Track) {
@@ -57,7 +58,7 @@ actor RecordingWriter {
         }
         guard let startTime, time >= startTime, let input = inputs[track], input.isReadyForMoreMediaData else { return }
         if input.append(buffer), track == .screen {
-            lastScreenTime = time
+            lastScreenFrame = buffer
         }
     }
 
@@ -66,8 +67,12 @@ actor RecordingWriter {
             writer.cancelWriting()
             throw RecordingError.noFrames
         }
+        let lastTime = lastScreenFrame?.presentationTimeStamp ?? startTime
+        let finalTime = CMTimeMaximum(end, lastTime)
+        if let held = lastScreenFrame?.restamped(at: finalTime), finalTime > lastTime, let screen = inputs[.screen], screen.isReadyForMoreMediaData {
+            screen.append(held)
+        }
         inputs.values.forEach { $0.markAsFinished() }
-        let finalTime = CMTimeMaximum(end, lastScreenTime)
         writer.endSession(atSourceTime: finalTime)
         await writer.finishWriting()
         if let error = writer.error { throw error }
@@ -118,11 +123,13 @@ actor RecordingWriter {
 enum RecordingError: LocalizedError {
     case displayUnavailable
     case noFrames
+    case unsupportedFormat
 
     var errorDescription: String? {
         switch self {
         case .displayUnavailable: "The selected display is no longer available."
         case .noFrames: "Nothing was captured. Check Screen Recording permission and try again."
+        case .unsupportedFormat: "This display or camera format can't be recorded."
         }
     }
 }

@@ -108,6 +108,11 @@ import LoupeCore
                     systemAudio: setup.systemAudio,
                     destination: folder.appending(path: "recording.mov")
                 ))
+                guard !Task.isCancelled else {
+                    await recorder.discard()
+                    try? FileManager.default.removeItem(at: folder)
+                    return
+                }
                 active = (recorder, folder)
                 phase = .recording(since: .now)
                 overlays.showControlBar()
@@ -133,6 +138,7 @@ import LoupeCore
                 finishSession()
                 open(recording)
             } catch {
+                try? FileManager.default.removeItem(at: active.folder)
                 fail(error)
             }
         }

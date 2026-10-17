@@ -13,7 +13,7 @@ struct CountdownView: View {
                 .background(.ultraThinMaterial, in: .circle)
                 .background(.black.opacity(0.3), in: .circle)
                 .overlay(Circle().strokeBorder(.white.opacity(0.15)))
-            Text("Press ⌥⌘R to stop")
+            Text("Press ⌥⌘R to cancel")
                 .font(.label)
                 .foregroundStyle(.white.opacity(0.85))
                 .padding(.horizontal, 12)

@@ -17,9 +17,13 @@ extension CMSampleBuffer {
     func retimed(from clock: CMClock) -> CMSampleBuffer? {
         let host = CMClockGetHostTimeClock()
         guard !CFEqual(clock, host) else { return self }
+        return restamped(at: CMSyncConvertTime(presentationTimeStamp, from: clock, to: host))
+    }
+
+    func restamped(at time: CMTime) -> CMSampleBuffer? {
         var timing = CMSampleTimingInfo()
         CMSampleBufferGetSampleTimingInfo(self, at: 0, timingInfoOut: &timing)
-        timing.presentationTimeStamp = CMSyncConvertTime(timing.presentationTimeStamp, from: clock, to: host)
+        timing.presentationTimeStamp = time
         timing.decodeTimeStamp = .invalid
         var copy: CMSampleBuffer?
         CMSampleBufferCreateCopyWithNewTiming(allocator: nil, sampleBuffer: self, sampleTimingEntryCount: 1, sampleTimingArray: &timing, sampleBufferOut: &copy)

@@ -26,6 +26,7 @@ import ScreenCaptureKit
     private let tracker = InputTracker()
     private let displayFrame: CGRect
     private let pixelSize: CGSize
+    private let hasCamera: Bool
 
     static func start(_ configuration: Configuration) async throws -> ScreenRecorder {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -35,7 +36,12 @@ import ScreenCaptureKit
         let ownApps = content.applications.filter { $0.processID == ProcessInfo.processInfo.processIdentifier }
         let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
         let recorder = try ScreenRecorder(configuration: configuration, display: display, filter: filter)
-        try await recorder.begin()
+        do {
+            try await recorder.begin()
+        } catch {
+            await recorder.discard()
+            throw error
+        }
         return recorder
     }
 
@@ -54,6 +60,7 @@ import ScreenCaptureKit
         stream = SCStream(filter: filter, configuration: Self.streamConfiguration(configuration, pixelSize: pixelSize), delegate: nil)
         self.configuration = configuration
         self.pixelSize = pixelSize
+        hasCamera = cameraSize != nil
         displayFrame = display.frame
     }
 
@@ -71,17 +78,18 @@ import ScreenCaptureKit
     }
 
     func stop() async throws -> Take {
+        let end = HostClock.now
         try? await stream.stopCapture()
         configuration.camera?.deliverFrames(to: nil, on: nil)
         let start = await writer.sessionStart?.seconds ?? HostClock.now.seconds
         let input = tracker.stop(start: start, display: displayFrame)
-        let duration = try await writer.finish(at: HostClock.now)
+        let duration = try await writer.finish(at: end)
         return Take(
             duration: duration,
             events: input.events.filter { $0.t <= duration },
             cursor: input.cursor,
             pixelSize: pixelSize,
-            hasCamera: configuration.camera?.dimensions != nil
+            hasCamera: hasCamera
         )
     }
 

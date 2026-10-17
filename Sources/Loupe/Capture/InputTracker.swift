@@ -19,8 +19,8 @@ import LoupeCore
             MainActor.assumeIsolated { self?.record(isKey: isKey) }
         }
         sampler = Task { [weak self] in
-            while !Task.isCancelled {
-                self?.sample()
+            while !Task.isCancelled, let self {
+                self.sample()
                 try? await Task.sleep(for: .milliseconds(16))
             }
         }
