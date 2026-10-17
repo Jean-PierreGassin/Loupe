@@ -54,6 +54,17 @@ import UniformTypeIdentifiers
         #expect(abs(try await AVURLAsset(url: output).load(.duration).seconds - 2) < 0.2)
     }
 
+    @Test func stillScreenAtTheEndStillExports() async throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let recording = directory.appending(path: "still.mov")
+        let output = directory.appending(path: "still.mp4")
+        try await SyntheticRecording.write(to: recording, duration: 4, screenDuration: 2)
+
+        try await Exporter.export(recording: recording, project: project, quality: .hd, to: output) { _ in }
+
+        #expect(abs(try await AVURLAsset(url: output).load(.duration).seconds - 4) < 0.2)
+    }
+
     private func saveFrames(of asset: AVAsset, at times: [Double]) async throws {
         guard let folder = ProcessInfo.processInfo.environment["LOUPE_FRAMES_DIR"].map(URL.init(fileURLWithPath:)) else { return }
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

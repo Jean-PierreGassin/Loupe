@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreImage
+import Synchronization
 
 final class LoupeInstruction: NSObject, AVVideoCompositionInstructionProtocol, @unchecked Sendable {
     let timeRange: CMTimeRange
@@ -26,9 +27,10 @@ final class LoupeCompositor: NSObject, AVVideoCompositing, Sendable {
         kCVPixelBufferMetalCompatibilityKey as String: true,
     ]
 
-    private let context = CIContext(options: [.cacheIntermediates: false, .name: "Loupe"])
+    private static let context = CIContext(options: [.cacheIntermediates: false, .name: "Loupe"])
     private let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
     private let queue = DispatchQueue(label: "app.loupe.compositor", qos: .userInitiated)
+    private let lastScreen = Mutex<CIImage?>(nil)
 
     var sourcePixelBufferAttributes: [String: any Sendable]? { Self.pixelAttributes }
     var requiredPixelBufferAttributesForRenderContext: [String: any Sendable] { Self.pixelAttributes }
@@ -42,7 +44,7 @@ final class LoupeCompositor: NSObject, AVVideoCompositing, Sendable {
         queue.async { [self] in
             guard
                 let instruction = request.videoCompositionInstruction as? LoupeInstruction,
-                let screen = request.sourceFrame(byTrackID: instruction.screenTrackID),
+                let screen = screenFrame(for: request, track: instruction.screenTrackID),
                 let output = request.renderContext.newPixelBuffer()
             else {
                 return request.finish(with: LoupeError.missingFrame)
@@ -50,14 +52,23 @@ final class LoupeCompositor: NSObject, AVVideoCompositing, Sendable {
             let camera = instruction.cameraTrackID.flatMap(request.sourceFrame(byTrackID:)).map { CIImage(cvPixelBuffer: $0) }
             let size = request.renderContext.size
             let frame = FrameRenderer.render(
-                screen: CIImage(cvPixelBuffer: screen),
+                screen: screen,
                 camera: camera,
                 scene: instruction.scene,
                 at: request.compositionTime.seconds,
                 canvas: size
             )
-            context.render(frame, to: output, bounds: CGRect(origin: .zero, size: size), colorSpace: colorSpace)
+            Self.context.render(frame, to: output, bounds: CGRect(origin: .zero, size: size), colorSpace: colorSpace)
             request.finish(withComposedVideoFrame: output)
         }
+    }
+
+    private func screenFrame(for request: AVAsynchronousVideoCompositionRequest, track: CMPersistentTrackID) -> CIImage? {
+        guard let buffer = request.sourceFrame(byTrackID: track) else {
+            return lastScreen.withLock { $0 }
+        }
+        let image = CIImage(cvPixelBuffer: buffer)
+        lastScreen.withLock { $0 = image }
+        return image
     }
 }

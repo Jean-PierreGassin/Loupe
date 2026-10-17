@@ -7,7 +7,7 @@ enum SyntheticRecording {
     static let cameraSize = CGSize(width: 640, height: 480)
     static let fps: Int32 = 30
 
-    static func write(to url: URL, duration: Double) async throws {
+    static func write(to url: URL, duration: Double, screenDuration: Double? = nil) async throws {
         try? FileManager.default.removeItem(at: url)
         let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
         let screen = input(size: screenSize)
@@ -22,10 +22,16 @@ enum SyntheticRecording {
         for frame in 0..<Int(duration * Double(fps)) {
             let time = CMTime(value: CMTimeValue(frame), timescale: fps)
             let progress = Double(frame) / (duration * Double(fps))
-            try await append(drawScreen(progress: progress), to: screenAdaptor, at: time)
+            if time.seconds < screenDuration ?? duration {
+                try await append(drawScreen(progress: progress), to: screenAdaptor, at: time)
+            } else if screen.isReadyForMoreMediaData {
+                screen.markAsFinished()
+            }
             try await append(drawCamera(progress: progress), to: cameraAdaptor, at: time)
         }
-        screen.markAsFinished()
+        if screenDuration == nil {
+            screen.markAsFinished()
+        }
         camera.markAsFinished()
         await writer.finishWriting()
         if let error = writer.error { throw error }
