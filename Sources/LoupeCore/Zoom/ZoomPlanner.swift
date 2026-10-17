@@ -7,6 +7,8 @@ public enum ZoomPlanner {
     static let typingGap = 1.2
     static let minTypingKeys = 3
     static let minDuration = 1.2
+    static let deadZoneShare = 0.45
+    static let pointerDeparture = 0.08
 
     public static func segments(for events: [InputEvent], duration: Double, scale: Double) -> [ZoomSegment] {
         let activities = (clicks(in: events) + typingBursts(in: events)).sorted { $0.lowerBound < $1.lowerBound }
@@ -46,6 +48,7 @@ public enum ZoomPlanner {
         var panY = Spring(value: 0.5, omega: 5.5)
         var focus = NormPoint.center
         var activeSegment: UUID?
+        var segmentEvents: [InputEvent] = []
         var segmentIndex = 0
         var states: [CameraState] = []
         states.reserveCapacity(frameCount)
@@ -59,18 +62,21 @@ public enum ZoomPlanner {
             let targetScale = max(1, segment?.scale ?? 1)
 
             if let segment {
-                let position = pointer.position(at: t) ?? focus
+                if activeSegment != segment.id {
+                    segmentEvents = events.filter { segment.start...segment.end ~= $0.t }
+                }
+                let anchor = anchor(at: t, among: segmentEvents, pointer: pointer) ?? focus
                 if activeSegment != segment.id {
                     activeSegment = segment.id
-                    focus = events.first { segment.start...segment.end ~= $0.t }?.position ?? position
+                    focus = anchor
                     if exp(depth.value) < 1.05 {
                         panX.snap(to: focus.x)
                         panY.snap(to: focus.y)
                     }
                 } else {
-                    let deadZone = 0.5 / targetScale * 0.55
-                    focus.x = focus.x.clamped(to: (position.x - deadZone)...(position.x + deadZone))
-                    focus.y = focus.y.clamped(to: (position.y - deadZone)...(position.y + deadZone))
+                    let deadZone = 0.5 / targetScale * deadZoneShare
+                    focus.x = focus.x.clamped(to: (anchor.x - deadZone)...(anchor.x + deadZone))
+                    focus.y = focus.y.clamped(to: (anchor.y - deadZone)...(anchor.y + deadZone))
                 }
             } else {
                 activeSegment = nil
@@ -82,6 +88,17 @@ public enum ZoomPlanner {
             states.append(CameraState(scale: max(1, exp(depth.value)), focus: NormPoint(panX.value, panY.value)))
         }
         return CameraPath(fps: fps, states: states)
+    }
+
+    private static func anchor(at t: Double, among events: [InputEvent], pointer: CursorTrack) -> NormPoint? {
+        guard let event = events.last(where: { $0.t <= t }) ?? events.first else { return pointer.position(at: t) }
+        guard
+            event.t <= t,
+            let then = pointer.position(at: event.t),
+            let now = pointer.position(at: t),
+            hypot(now.x - then.x, now.y - then.y) > pointerDeparture
+        else { return event.position }
+        return now
     }
 
     private static func clicks(in events: [InputEvent]) -> [ClosedRange<Double>] {

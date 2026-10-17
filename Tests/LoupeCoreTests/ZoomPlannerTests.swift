@@ -52,6 +52,35 @@ import Testing
         #expect(path.state(at: 0.5).scale == 1)
     }
 
+    @Test func typingZoomFollowsTheCaretNotThePointer() {
+        let caret = NormPoint(0.3, 0.7)
+        let typing = stride(from: 2.0, to: 4.0, by: 0.15).map { InputEvent(t: $0, kind: .key, position: caret) }
+        let path = ZoomPlanner.cameraPath(
+            segments: ZoomPlanner.segments(for: typing, duration: 10, scale: 2),
+            events: typing,
+            cursor: [CursorSample(t: 0, position: corner)],
+            duration: 10
+        )
+
+        let focus = path.state(at: 3.5).focus
+        #expect(abs(focus.x - caret.x) < 0.05)
+        #expect(abs(focus.y - caret.y) < 0.05)
+    }
+
+    @Test func cameraFollowsThePointerOnceItLeavesTheClick() {
+        let click = InputEvent(t: 2, kind: .click, position: corner)
+        let away = NormPoint(0.2, 0.8)
+        let path = ZoomPlanner.cameraPath(
+            segments: [ZoomSegment(start: 1.5, end: 6, scale: 2, isAuto: true)],
+            events: [click],
+            cursor: [CursorSample(t: 0, position: corner), CursorSample(t: 2.5, position: corner), CursorSample(t: 3, position: away)],
+            duration: 8
+        )
+
+        #expect(abs(path.state(at: 2.4).focus.x - corner.x) < 0.05)
+        #expect(path.state(at: 5).focus.x < 0.5)
+    }
+
     @Test func manualZoomsSurviveReplanning() {
         var project = Project(
             title: "Demo",
