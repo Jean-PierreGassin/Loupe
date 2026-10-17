@@ -33,6 +33,8 @@ import LoupeCore
     @ObservationIgnored private var rebuildTask: Task<Void, Never>?
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
     @ObservationIgnored private var exportTask: Task<Void, Never>?
+    @ObservationIgnored private var exportID: UUID?
+    @ObservationIgnored private var terminationObserver: NSObjectProtocol?
 
     init(recording: Recording, library: RecordingLibrary) {
         self.recording = recording
@@ -45,6 +47,9 @@ import LoupeCore
     }
 
     func load() async {
+        terminationObserver = NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.flush() }
+        }
         observePlayback()
         await rebuildComposition()
         await loadFilmstrip()
@@ -145,30 +150,38 @@ import LoupeCore
     func cancelExport() {
         exportTask?.cancel()
         exportTask = nil
+        exportID = nil
         exportState = .idle
     }
 
     private func export(quality: ExportQuality) async {
         player.pause()
-        let destination = library.exportDestination(for: project.title)
+        let id = UUID()
+        exportID = id
         exportState = .exporting(0)
+        let scratch = URL.temporaryDirectory.appending(path: "Loupe-\(id.uuidString).mp4")
+        defer { try? FileManager.default.removeItem(at: scratch) }
         do {
-            try FileManager.default.createDirectory(at: library.exportsFolder, withIntermediateDirectories: true)
-            try await Exporter.export(recording: recording.videoURL, project: project, quality: quality, to: destination) { [weak self] progress in
+            try await Exporter.export(recording: recording.videoURL, project: project, quality: quality, to: scratch) { [weak self] progress in
                 Task { @MainActor in
-                    guard case .exporting = self?.exportState else { return }
-                    self?.exportState = .exporting(progress)
+                    guard let self, self.exportID == id else { return }
+                    self.exportState = .exporting(progress)
                 }
             }
+            try Task.checkCancellation()
+            try FileManager.default.createDirectory(at: library.exportsFolder, withIntermediateDirectories: true)
+            let destination = library.exportDestination(for: project.title)
+            try FileManager.default.moveItem(at: scratch, to: destination)
             exportState = .finished(destination)
         } catch {
-            try? FileManager.default.removeItem(at: destination)
-            guard !Task.isCancelled else { return }
+            guard exportID == id, !Task.isCancelled else { return }
             exportState = .failed(error.localizedDescription)
         }
     }
 
     func teardown() {
+        terminationObserver.map(NotificationCenter.default.removeObserver)
+        terminationObserver = nil
         player.pause()
         timeObserver.map(player.removeTimeObserver)
         timeObserver = nil
@@ -196,6 +209,12 @@ import LoupeCore
             guard !Task.isCancelled else { return }
             save()
         }
+    }
+
+    private func flush() {
+        saveTask?.cancel()
+        save()
+        cancelExport()
     }
 
     private func save() {
