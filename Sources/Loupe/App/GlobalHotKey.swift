@@ -4,8 +4,9 @@ import Carbon.HIToolbox
     struct Shortcut {
         let keyCode: Int
         let modifiers: Int
+        let symbol: String
 
-        static let optionCommandR = Shortcut(keyCode: kVK_ANSI_R, modifiers: optionKey | cmdKey)
+        static let record = Shortcut(keyCode: kVK_ANSI_R, modifiers: optionKey | shiftKey | cmdKey, symbol: "⌥⇧⌘R")
     }
 
     private static var actions: [UInt32: () -> Void] = [:]
@@ -15,12 +16,11 @@ import Carbon.HIToolbox
     private var reference: EventHotKeyRef?
     private let id: UInt32
 
-    init(_ shortcut: Shortcut, action: @escaping () -> Void) {
+    init?(_ shortcut: Shortcut, action: @escaping () -> Void) {
         id = Self.nextID
         Self.nextID += 1
-        Self.actions[id] = action
         Self.installHandler()
-        RegisterEventHotKey(
+        let status = RegisterEventHotKey(
             UInt32(shortcut.keyCode),
             UInt32(shortcut.modifiers),
             EventHotKeyID(signature: OSType(0x4C4F5550), id: id),
@@ -28,6 +28,8 @@ import Carbon.HIToolbox
             0,
             &reference
         )
+        guard status == noErr else { return nil }
+        Self.actions[id] = action
     }
 
     isolated deinit {

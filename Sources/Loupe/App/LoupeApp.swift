@@ -17,7 +17,7 @@ import SwiftUI
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Recording", action: model.toggleRecording)
-                    .keyboardShortcut("r", modifiers: [.option, .command])
+                    .keyboardShortcut("r", modifiers: [.option, .shift, .command])
             }
         }
 

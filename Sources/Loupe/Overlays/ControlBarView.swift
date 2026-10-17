@@ -23,7 +23,7 @@ struct ControlBarView: View {
                     .background(.record.gradient, in: .circle)
             }
             .buttonStyle(.plain)
-            .help("Stop and edit (⌥⌘R)")
+            .help("Stop and edit (\(GlobalHotKey.Shortcut.record.symbol))")
             Button(action: model.discardRecording) {
                 Image(systemName: "trash")
             }

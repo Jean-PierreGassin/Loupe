@@ -33,7 +33,7 @@ import LoupeCore
     @ObservationIgnored private var hotKey: GlobalHotKey?
 
     init() {
-        hotKey = GlobalHotKey(.optionCommandR) { [weak self] in self?.toggleRecording() }
+        hotKey = GlobalHotKey(.record) { [weak self] in self?.toggleRecording() }
         if let id = UserDefaults.standard.string(forKey: "openRecording").flatMap(UUID.init), library.recording(with: id) != nil {
             route = .editor(id)
         }

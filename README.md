@@ -11,7 +11,7 @@ every click and typing burst. Exports polished MP4s with a styled background, ro
 - Timeline editor: trim, add, move, resize and retune zooms, drag the camera bubble on the preview
 - Backgrounds, padding, roundness, shadow and click highlights
 - 1080p, 1440p and 4K export with one-click copy for pasting into chat apps
-- Global shortcut ⌥⌘R to start and stop
+- Global shortcut ⌥⇧⌘R to start and stop
 
 Keystrokes are only timestamped to plan zooms. Loupe never records which keys you press.
 
