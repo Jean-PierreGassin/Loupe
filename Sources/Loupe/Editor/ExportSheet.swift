@@ -23,7 +23,7 @@ struct ExportSheet: View {
         .frame(width: 420)
         .background(.surface)
         .animation(.snappy, value: editor.exportState)
-        .onDisappear { editor.exportState = .idle }
+        .onDisappear(perform: editor.cancelExport)
     }
 
     private var options: some View {
@@ -53,7 +53,7 @@ struct ExportSheet: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.quiet)
                     .keyboardShortcut(.cancelAction)
-                Button("Export") { Task { await editor.export(quality: quality) } }
+                Button("Export") { editor.startExport(quality: quality) }
                     .buttonStyle(.primary)
                     .keyboardShortcut(.defaultAction)
             }
@@ -65,9 +65,15 @@ struct ExportSheet: View {
             header("Exporting…", subtitle: "Rendering zooms, camera and background.")
             ProgressView(value: progress)
                 .tint(.brand)
-            Text(progress, format: .percent.precision(.fractionLength(0)))
-                .font(.timecode)
-                .foregroundStyle(.secondaryText)
+            HStack {
+                Text(progress, format: .percent.precision(.fractionLength(0)))
+                    .font(.timecode)
+                    .foregroundStyle(.secondaryText)
+                Spacer()
+                Button("Cancel", action: editor.cancelExport)
+                    .buttonStyle(.quiet)
+                    .keyboardShortcut(.cancelAction)
+            }
         }
     }
 

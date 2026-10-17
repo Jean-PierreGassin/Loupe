@@ -32,6 +32,7 @@ import LoupeCore
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var rebuildTask: Task<Void, Never>?
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
+    @ObservationIgnored private var exportTask: Task<Void, Never>?
 
     init(recording: Recording, library: RecordingLibrary) {
         self.recording = recording
@@ -133,7 +134,21 @@ import LoupeCore
         }
     }
 
-    func export(quality: ExportQuality) async {
+    func pause() {
+        player.pause()
+    }
+
+    func startExport(quality: ExportQuality) {
+        exportTask = Task { await export(quality: quality) }
+    }
+
+    func cancelExport() {
+        exportTask?.cancel()
+        exportTask = nil
+        exportState = .idle
+    }
+
+    private func export(quality: ExportQuality) async {
         player.pause()
         let destination = library.exportDestination(for: project.title)
         exportState = .exporting(0)
@@ -147,6 +162,8 @@ import LoupeCore
             }
             exportState = .finished(destination)
         } catch {
+            try? FileManager.default.removeItem(at: destination)
+            guard !Task.isCancelled else { return }
             exportState = .failed(error.localizedDescription)
         }
     }

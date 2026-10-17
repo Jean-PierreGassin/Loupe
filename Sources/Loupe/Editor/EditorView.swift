@@ -50,6 +50,9 @@ private struct EditorWorkspace: View {
         .ignoresSafeArea()
         .editorKeyboardShortcuts(editor)
         .onDisappear { editor.teardown() }
+        .onChange(of: model.phase) { _, phase in
+            if phase != .idle { editor.pause() }
+        }
         .sheet(isPresented: $exporting) {
             ExportSheet(editor: editor)
         }
