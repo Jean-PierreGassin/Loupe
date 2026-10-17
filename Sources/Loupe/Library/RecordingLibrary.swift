@@ -71,6 +71,17 @@ struct Recording: Identifiable, Hashable {
         recordings.removeAll { $0.id == recording.id }
     }
 
+    func exportDestination(for title: String) -> URL {
+        let cleaned = title
+            .components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>"))
+            .joined(separator: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: ".")))
+        let base = cleaned.isEmpty ? "Untitled" : cleaned
+        return (1...).lazy
+            .map { self.exportsFolder.appending(path: $0 == 1 ? "\(base).mp4" : "\(base) \($0).mp4") }
+            .first { !FileManager.default.fileExists(atPath: $0.path()) }!
+    }
+
     func reveal(_ recording: Recording) {
         NSWorkspace.shared.activateFileViewerSelecting([recording.videoURL])
     }

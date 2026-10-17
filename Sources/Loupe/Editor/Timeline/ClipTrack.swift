@@ -74,10 +74,10 @@ struct ClipTrack: View {
                 .onChanged { value in
                     let time = scale.time(value.location.x)
                     if edge == .leading {
-                        editor.project.trimStart = min(time, editor.project.trimEnd - Self.minimumLength)
+                        editor.project.trimStart = max(0, min(time, editor.project.trimEnd - Self.minimumLength))
                         editor.seek(to: editor.project.trimStart)
                     } else {
-                        editor.project.trimEnd = max(time, editor.project.trimStart + Self.minimumLength)
+                        editor.project.trimEnd = min(editor.project.duration, max(time, editor.project.trimStart + Self.minimumLength))
                         editor.seek(to: editor.project.trimEnd)
                     }
                 }

@@ -1,13 +1,29 @@
 import SwiftUI
 
 struct EditorView: View {
-    @Environment(AppModel.self) private var model
-    @State private var editor: EditorModel
-    @State private var exporting = false
+    let recording: Recording
+    let library: RecordingLibrary
+    @State private var editor: EditorModel?
 
-    init(recording: Recording, library: RecordingLibrary) {
-        _editor = State(initialValue: EditorModel(recording: recording, library: library))
+    var body: some View {
+        ZStack {
+            Color.canvas
+            if let editor {
+                EditorWorkspace(editor: editor)
+            }
+        }
+        .task {
+            let editor = EditorModel(recording: recording, library: library)
+            self.editor = editor
+            await editor.load()
+        }
     }
+}
+
+private struct EditorWorkspace: View {
+    @Environment(AppModel.self) private var model
+    let editor: EditorModel
+    @State private var exporting = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -33,7 +49,6 @@ struct EditorView: View {
         }
         .ignoresSafeArea()
         .editorKeyboardShortcuts(editor)
-        .task { await editor.load() }
         .onDisappear { editor.teardown() }
         .sheet(isPresented: $exporting) {
             ExportSheet(editor: editor)
@@ -109,7 +124,7 @@ private struct EditorKeyboardShortcuts: ViewModifier {
     init(_ event: NSEvent) {
         code = event.keyCode
         shift = event.modifierFlags.contains(.shift)
-        isFree = event.window?.attachedSheet == nil && !(event.window?.firstResponder is NSText)
+        isFree = event.window.map { !($0 is NSPanel) && $0.attachedSheet == nil && !($0.firstResponder is NSText) } ?? false
     }
 }
 

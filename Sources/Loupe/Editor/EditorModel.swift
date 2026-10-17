@@ -32,6 +32,7 @@ import LoupeCore
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var rebuildTask: Task<Void, Never>?
+    @ObservationIgnored private var statusTask: Task<Void, Never>?
 
     init(recording: Recording, library: RecordingLibrary) {
         self.recording = recording
@@ -130,7 +131,7 @@ import LoupeCore
 
     func export(quality: ExportQuality) async {
         player.pause()
-        let destination = library.exportsFolder.appending(path: "\(project.title.sanitizedFilename).mp4")
+        let destination = library.exportDestination(for: project.title)
         exportState = .exporting(0)
         do {
             try FileManager.default.createDirectory(at: library.exportsFolder, withIntermediateDirectories: true)
@@ -150,6 +151,7 @@ import LoupeCore
         player.pause()
         timeObserver.map(player.removeTimeObserver)
         timeObserver = nil
+        statusTask?.cancel()
         saveTask?.cancel()
         save()
         let recording = recording
@@ -216,9 +218,9 @@ import LoupeCore
                 self.currentTime = time.seconds + self.project.trimStart
             }
         }
-        Task { [weak self] in
-            guard let player = self?.player else { return }
-            for await status in player.publisher(for: \.timeControlStatus).values {
+        let statuses = player.publisher(for: \.timeControlStatus).values
+        statusTask = Task { [weak self] in
+            for await status in statuses {
                 self?.isPlaying = status != .paused
             }
         }
@@ -238,11 +240,5 @@ import LoupeCore
             }
         }
         filmstrip = frames
-    }
-}
-
-private extension String {
-    var sanitizedFilename: String {
-        components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>")).joined(separator: "-")
     }
 }
