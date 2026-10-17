@@ -13,7 +13,7 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$root/.build/release/Loupe" "$app/Contents/MacOS/Loupe"
 
-swift "$root/scripts/make-icon.swift" "$work/icon.png"
+swift "$root/scripts/make-icon.swift" "$root/assets/icon.svg" "$work/icon.png"
 mkdir "$work/AppIcon.iconset"
 for size in 16 32 128 256 512; do
   sips -z "$size" "$size" "$work/icon.png" --out "$work/AppIcon.iconset/icon_${size}x${size}.png" >/dev/null

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2B2668"/>
+      <stop offset="0.55" stop-color="#141230"/>
+      <stop offset="1" stop-color="#09090F"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.28" cy="0.22" r="0.65">
+      <stop offset="0" stop-color="#8B5CF6" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="lens" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A78BFA"/>
+      <stop offset="0.5" stop-color="#EC4899"/>
+      <stop offset="1" stop-color="#FB923C"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.45" stop-color="#E4E4F0"/>
+      <stop offset="1" stop-color="#9A9AB5"/>
+    </linearGradient>
+    <linearGradient id="handle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F4F4FA"/>
+      <stop offset="1" stop-color="#A3A3BC"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.35"/>
+    </linearGradient>
+    <clipPath id="tileClip"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+    <clipPath id="lensClip"><circle cx="460" cy="460" r="196"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#tileClip)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#tile)"/>
+    <rect x="100" y="100" width="824" height="824" fill="url(#glow)"/>
+    <rect x="196" y="236" width="632" height="480" rx="34" fill="#FFFFFF" fill-opacity="0.045" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="3"/>
+    <line x1="196" y1="306" x2="828" y2="306" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="3"/>
+    <circle cx="742" cy="271" r="26" fill="#FF3B5C" fill-opacity="0.25"/>
+    <circle cx="742" cy="271" r="14" fill="#FF3B5C"/>
+    <rect x="236" y="262" width="120" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.16"/>
+    <rect x="100" y="620" width="824" height="304" fill="url(#floor)"/>
+  </g>
+  <rect x="101.5" y="101.5" width="821" height="821" rx="184" fill="none" stroke="url(#edge)" stroke-width="3"/>
+
+  <line x1="612" y1="612" x2="772" y2="772" stroke="#05050A" stroke-opacity="0.45" stroke-width="92" stroke-linecap="round"/>
+  <line x1="606" y1="606" x2="766" y2="766" stroke="url(#handle)" stroke-width="72" stroke-linecap="round"/>
+
+  <circle cx="460" cy="460" r="196" fill="url(#lens)"/>
+  <g clip-path="url(#lensClip)">
+    <circle cx="430" cy="404" r="58" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="10"/>
+    <circle cx="430" cy="404" r="104" fill="none" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="8"/>
+    <path d="M430 404 L430 568 L470 530 L498 592 L530 578 L502 518 L556 518 Z" fill="#FFFFFF" stroke="#16142E" stroke-width="12" stroke-linejoin="round"/>
+    <ellipse cx="400" cy="300" rx="230" ry="130" fill="url(#shine)"/>
+  </g>
+  <circle cx="460" cy="460" r="179" fill="none" stroke="#05050A" stroke-opacity="0.3" stroke-width="6"/>
+  <circle cx="460" cy="460" r="196" fill="none" stroke="url(#rim)" stroke-width="36"/>
+  <circle cx="460" cy="460" r="214" fill="none" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="2"/>
+</svg>
