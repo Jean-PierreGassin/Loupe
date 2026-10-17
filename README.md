@@ -26,7 +26,9 @@ swift test                 # zoom planner and render pipeline tests
 ```
 
 The first recording asks for Screen Recording, Camera and Microphone access. Accessibility access is optional and
-enables typing zooms. Ad-hoc signed builds may ask again after rebuilding.
+enables typing zooms. Local builds are ad-hoc signed with a requirement pinned to the bundle identifier, so grants
+survive rebuilds. That requirement trusts any binary with the same identifier, so sign distributed builds with a real
+Developer ID.
 
 Recordings live in `~/Movies/Loupe`, exports in `~/Movies/Loupe/Exports`. Set `LOUPE_LIBRARY` to use another folder.
 
