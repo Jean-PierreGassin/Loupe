@@ -54,6 +54,31 @@ public struct CameraStyle: Codable, Hashable, Sendable {
     }
 }
 
+extension Style {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fallback = Style()
+        background = container.decode(.background, default: fallback.background)
+        padding = container.decode(.padding, default: fallback.padding)
+        cornerRadius = container.decode(.cornerRadius, default: fallback.cornerRadius)
+        shadow = container.decode(.shadow, default: fallback.shadow)
+        clickHighlights = container.decode(.clickHighlights, default: fallback.clickHighlights)
+        camera = container.decode(.camera, default: fallback.camera)
+    }
+}
+
+extension CameraStyle {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fallback = CameraStyle()
+        visible = container.decode(.visible, default: fallback.visible)
+        shape = container.decode(.shape, default: fallback.shape)
+        size = container.decode(.size, default: fallback.size)
+        center = container.decode(.center, default: fallback.center)
+        mirror = container.decode(.mirror, default: fallback.mirror)
+    }
+}
+
 public enum BackgroundPreset: String, Codable, CaseIterable, Identifiable, Sendable {
     case none
     case midnight

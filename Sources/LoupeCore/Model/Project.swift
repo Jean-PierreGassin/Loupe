@@ -58,3 +58,24 @@ public struct Project: Codable, Hashable, Identifiable, Sendable {
         zooms = (manual + auto).sorted { $0.start < $1.start }
     }
 }
+
+extension Project {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        duration = try container.decode(Double.self, forKey: .duration)
+        screenWidth = try container.decode(Int.self, forKey: .screenWidth)
+        screenHeight = try container.decode(Int.self, forKey: .screenHeight)
+        title = container.decode(.title, default: "Untitled")
+        createdAt = container.decode(.createdAt, default: .now)
+        hasCamera = container.decode(.hasCamera, default: false)
+        events = container.decode(.events, default: [])
+        cursor = container.decode(.cursor, default: [])
+        zooms = container.decode(.zooms, default: [])
+        autoZoom = container.decode(.autoZoom, default: true)
+        defaultZoomScale = container.decode(.defaultZoomScale, default: 2)
+        trimStart = container.decode(.trimStart, default: 0)
+        trimEnd = container.decode(.trimEnd, default: duration)
+        style = container.decode(.style, default: Style())
+    }
+}
