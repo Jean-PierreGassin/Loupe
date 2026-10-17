@@ -3,12 +3,12 @@ import LoupeCore
 import Synchronization
 
 @MainActor final class InputTracker {
-    private struct Mark: Sendable {
+    struct Mark: Sendable {
         let time: Double
         let location: CGPoint
     }
 
-    private struct KeyMark: Sendable {
+    struct KeyMark: Sendable {
         let time: Double
         let pointer: CGPoint
         var focus: CGPoint?
@@ -86,7 +86,7 @@ import Synchronization
         }
     }
 
-    private static func locate(_ keys: [KeyMark]) -> [Mark] {
+    nonisolated static func locate(_ keys: [KeyMark]) -> [Mark] {
         var upcoming: CGPoint?
         return keys.reversed().map { key in
             if key.resolved {
@@ -94,6 +94,7 @@ import Synchronization
             }
             return Mark(time: key.time, location: upcoming ?? key.pointer)
         }
+        .reversed()
     }
 
     private func sample() {

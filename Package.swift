@@ -8,5 +8,6 @@ let package = Package(
         .target(name: "LoupeCore", path: "Sources/LoupeCore"),
         .executableTarget(name: "Loupe", dependencies: ["LoupeCore"], path: "Sources/Loupe"),
         .testTarget(name: "LoupeCoreTests", dependencies: ["LoupeCore"], path: "Tests/LoupeCoreTests"),
+        .testTarget(name: "LoupeTests", dependencies: ["Loupe"], path: "Tests/LoupeTests"),
     ]
 )

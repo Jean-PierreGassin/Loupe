@@ -16,8 +16,7 @@ struct Recording: Identifiable, Hashable {
     private(set) var recordings: [Recording] = []
     var saveFailure: String?
 
-    let root = ProcessInfo.processInfo.environment["LOUPE_LIBRARY"].map { URL(filePath: $0) }
-        ?? URL.moviesDirectory.appending(path: "Loupe")
+    let root: URL
     var exportsFolder: URL { root.appending(path: "Exports") }
 
     private let encoder: JSONEncoder = {
@@ -32,7 +31,8 @@ struct Recording: Identifiable, Hashable {
         return decoder
     }()
 
-    init() {
+    init(root: URL = ProcessInfo.processInfo.environment["LOUPE_LIBRARY"].map { URL(filePath: $0) } ?? URL.moviesDirectory.appending(path: "Loupe")) {
+        self.root = root
         reload()
     }
 
