@@ -103,6 +103,6 @@
     <text x="420" y="196" font-size="104" font-weight="700" letter-spacing="-3" fill="url(#word)">Loupe</text>
     <rect x="424" y="222" width="72" height="5" rx="2.5" fill="url(#accent)"/>
     <text x="422" y="280" font-size="30" font-weight="500" fill="#FFFFFF" fill-opacity="0.82">Screen recordings that zoom in on what matters.</text>
-    <text x="422" y="324" font-size="22" font-weight="400" fill="#FFFFFF" fill-opacity="0.5">Free and open source for macOS · Auto zoom · Webcam bubble · Polished exports</text>
+    <text x="422" y="324" font-size="22" font-weight="400" fill="#FFFFFF" fill-opacity="0.5">Free for macOS · Auto zoom · Webcam bubble · Polished exports</text>
   </g>
 </svg>

@@ -36,7 +36,10 @@ every click and typing burst for you, then exports a polished MP4 ready to share
 3. Click **New Recording** (or press **⌥⇧⌘R**) and allow Screen Recording, Camera and Microphone. Accessibility is
    optional and turns on typing zoom.
 
-Loupe needs macOS 15 or later and runs natively on Apple silicon and Intel.
+Loupe needs macOS 15 or later and runs natively on Apple silicon and Intel. Recordings are saved to
+`~/Movies/Loupe` and exports to `~/Movies/Loupe/Exports`. Until releases are notarized, macOS may ask for
+permissions again after an update: if recording stops working, remove Loupe from the list in Privacy & Security and
+allow it again.
 
 ## Build from source
 
