@@ -14,6 +14,7 @@ struct Recording: Identifiable, Hashable {
 
 @MainActor @Observable final class RecordingLibrary {
     private(set) var recordings: [Recording] = []
+    var saveFailure: String?
 
     let root = ProcessInfo.processInfo.environment["LOUPE_LIBRARY"].map { URL(filePath: $0) }
         ?? URL.moviesDirectory.appending(path: "Loupe")
@@ -57,8 +58,12 @@ struct Recording: Identifiable, Hashable {
     }
 
     func save(_ recording: Recording) {
-        guard let data = try? encoder.encode(recording.project) else { return }
-        try? data.write(to: recording.projectURL, options: .atomic)
+        do {
+            try encoder.encode(recording.project).write(to: recording.projectURL, options: .atomic)
+            saveFailure = nil
+        } catch {
+            saveFailure = "“\(recording.project.title)” couldn't be saved. \(error.localizedDescription)"
+        }
         if let index = recordings.firstIndex(where: { $0.id == recording.id }) {
             recordings[index] = recording
         } else {
@@ -95,6 +100,6 @@ struct Recording: Identifiable, Hashable {
             let image = try? await generator.image(at: time).image,
             let data = NSBitmapImageRep(cgImage: image).representation(using: .jpeg, properties: [.compressionFactor: 0.85])
         else { return }
-        try? data.write(to: recording.thumbnailURL)
+        try? data.write(to: recording.thumbnailURL, options: .atomic)
     }
 }

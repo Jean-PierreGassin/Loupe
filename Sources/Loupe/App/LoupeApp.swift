@@ -68,6 +68,11 @@ private struct RootView: View {
                 }
             }
         }
+        .alert("Changes weren't saved", isPresented: saveFailurePresented) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.library.saveFailure ?? "")
+        }
         .background(WindowReader { model.mainWindow.window = $0 })
         .onAppear {
             model.mainWindow.reopen = { openWindow(id: "main") }
@@ -81,6 +86,10 @@ private struct RootView: View {
 
     private var alertPresented: Binding<Bool> {
         Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })
+    }
+
+    private var saveFailurePresented: Binding<Bool> {
+        Binding(get: { model.library.saveFailure != nil }, set: { if !$0 { model.library.saveFailure = nil } })
     }
 }
 
