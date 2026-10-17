@@ -12,9 +12,11 @@ import Testing
 
         let button = NormPoint(1210 / 1440, 188 / 900)
         let row = NormPoint(0.35, 0.42)
-        let typing = stride(from: 6.0, to: 8.4, by: 0.15).map { InputEvent(t: $0, kind: .key, position: row) }
+        let typing = stride(from: 6.0, to: 8.4, by: 0.15).map { time in
+            InputEvent(t: time, kind: .key, position: NormPoint((330 + 390 * (time - 6) / 2.4) / 1440, 374 / 900))
+        }
         var project = Project(
-            title: "Publishing the quarterly report",
+            title: "Publishing the Q3 launch",
             duration: 12,
             screenWidth: 1440,
             screenHeight: 900,
@@ -31,5 +33,9 @@ import Testing
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         try encoder.encode(project).write(to: folder.appending(path: "project.json"))
+
+        let exports = URL(filePath: try #require(Self.destination)).appending(path: "Exports")
+        try FileManager.default.createDirectory(at: exports, withIntermediateDirectories: true)
+        try await Exporter.export(recording: folder.appending(path: "recording.mov"), project: project, quality: .hd, to: exports.appending(path: "demo.mp4")) { _ in }
     }
 }

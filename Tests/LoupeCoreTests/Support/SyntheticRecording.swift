@@ -1,3 +1,4 @@
+import AppKit
 import AVFoundation
 import CoreText
 import Testing
@@ -97,39 +98,119 @@ enum SyntheticRecording {
 
     private static func drawScreen(progress: Double) -> CVPixelBuffer {
         draw(size: screenSize) { context, size in
-            context.setFillColor(CGColor(red: 0.95, green: 0.95, blue: 0.97, alpha: 1))
-            context.fill(CGRect(origin: .zero, size: size))
-            context.setFillColor(CGColor(red: 0.16, green: 0.17, blue: 0.22, alpha: 1))
-            context.fill(CGRect(x: 0, y: 0, width: 260, height: size.height))
-            for row in 0..<14 {
-                let y = size.height - 120 - CGFloat(row) * 52
-                text("Row \(row + 1)  ·  Quarterly report draft", at: CGPoint(x: 300, y: y), size: 22, in: context)
+            let canvas = Canvas(context: context, height: size.height)
+            canvas.fill(CGRect(origin: .zero, size: size), 0xF5F6FA)
+
+            canvas.fill(CGRect(x: 0, y: 0, width: 248, height: size.height), 0x12131A)
+            canvas.round(CGRect(x: 28, y: 30, width: 34, height: 34), radius: 10, 0x7C5CFA)
+            canvas.text("Northwind", at: CGPoint(x: 76, y: 56), size: 21, weight: .bold, color: 0xFFFFFF)
+            for (index, item) in ["Overview", "Launches", "Customers", "Analytics", "Reports", "Settings"].enumerated() {
+                let y = 118 + Double(index) * 50
+                if index == 1 {
+                    canvas.round(CGRect(x: 16, y: y - 8, width: 216, height: 42), radius: 10, 0x232533)
+                    canvas.round(CGRect(x: 16, y: y - 8, width: 4, height: 42), radius: 2, 0x8B6CFF)
+                }
+                canvas.round(CGRect(x: 36, y: y + 4, width: 18, height: 18), radius: 5, index == 1 ? 0x8B6CFF : 0x4A4D5E)
+                canvas.text(item, at: CGPoint(x: 68, y: y + 20), size: 17, weight: index == 1 ? .semibold : .regular, color: index == 1 ? 0xFFFFFF : 0x9A9DB0)
             }
-            context.setFillColor(CGColor(red: 0.42, green: 0.36, blue: 0.95, alpha: 1))
-            context.fill(CGRect(x: 1100, y: size.height - 220, width: 220, height: 64))
-            text("Publish", at: CGPoint(x: 1160, y: size.height - 200), size: 26, color: .white, in: context)
-            context.setFillColor(CGColor(red: 0.9, green: 0.2, blue: 0.3, alpha: 1))
-            context.fillEllipse(in: CGRect(x: 300 + progress * 900, y: 60, width: 30, height: 30))
+
+            canvas.fill(CGRect(x: 248, y: 0, width: size.width - 248, height: 76), 0xFFFFFF)
+            canvas.fill(CGRect(x: 248, y: 75, width: size.width - 248, height: 1), 0xE6E8EF)
+            canvas.round(CGRect(x: 296, y: 20, width: 420, height: 38), radius: 10, 0xF1F2F6)
+            canvas.text("Search launches, people, docs…", at: CGPoint(x: 316, y: 45), size: 15, color: 0x9A9DB0)
+            canvas.circle(center: CGPoint(x: 1380, y: 38), radius: 19, 0xF4A261)
+
+            canvas.text("Q3 Product Launch", at: CGPoint(x: 300, y: 178), size: 36, weight: .bold, color: 0x14151C)
+            canvas.text("Draft · Last edited 2 minutes ago", at: CGPoint(x: 300, y: 210), size: 16, color: 0x7A7D8F)
+            canvas.round(CGRect(x: 1100, y: 156, width: 220, height: 64), radius: 14, 0x7C5CFA)
+            canvas.text("Publish", at: CGPoint(x: 1172, y: 196), size: 21, weight: .semibold, color: 0xFFFFFF)
+
+            let headline = "Introducing auto zoom for every click"
+            let typed = headline.prefix(Int(((progress - 0.48) / 0.22).clamped(to: 0...1) * Double(headline.count)))
+            canvas.text("Headline", at: CGPoint(x: 300, y: 318), size: 15, weight: .semibold, color: 0x4A4D5E)
+            canvas.round(CGRect(x: 300, y: 342, width: 1020, height: 64), radius: 12, 0xFFFFFF, stroke: typed.isEmpty ? 0xDADCE5 : 0x8B6CFF)
+            let end = canvas.text(String(typed), at: CGPoint(x: 322, y: 384), size: 22, weight: .medium, color: 0x14151C)
+            canvas.fill(CGRect(x: end + 2, y: 358, width: 2.5, height: 32), 0x7C5CFA)
+
+            let metrics = [("Signups", "12,480", "+18%"), ("Activation", "64.2%", "+4.1%"), ("Revenue", "$48.9k", "+22%")]
+            for (index, metric) in metrics.enumerated() {
+                let x = 300 + Double(index) * 348
+                canvas.round(CGRect(x: x, y: 438, width: 324, height: 132), radius: 16, 0xFFFFFF, stroke: 0xE6E8EF)
+                canvas.text(metric.0, at: CGPoint(x: x + 24, y: 474), size: 15, color: 0x7A7D8F)
+                canvas.text(metric.1, at: CGPoint(x: x + 24, y: 526), size: 34, weight: .bold, color: 0x14151C)
+                canvas.text(metric.2, at: CGPoint(x: x + 24, y: 554), size: 14, weight: .semibold, color: 0x16A34A)
+            }
+
+            canvas.round(CGRect(x: 300, y: 594, width: 1020, height: 270), radius: 16, 0xFFFFFF, stroke: 0xE6E8EF)
+            canvas.text("Weekly signups", at: CGPoint(x: 324, y: 632), size: 17, weight: .semibold, color: 0x14151C)
+            for bar in 0..<16 {
+                let height = 60 + (sin(Double(bar) * 0.7 + progress * 3) * 0.5 + 0.5) * 120 + Double(bar) * 4
+                canvas.round(CGRect(x: 330 + Double(bar) * 61, y: 844 - height, width: 38, height: height), radius: 8, bar == 15 ? 0x7C5CFA : 0xD9D0FF)
+            }
         }
     }
 
     private static func drawCamera(progress: Double) -> CVPixelBuffer {
         draw(size: cameraSize) { context, size in
-            context.setFillColor(CGColor(red: 0.2, green: 0.45, blue: 0.5, alpha: 1))
-            context.fill(CGRect(origin: .zero, size: size))
-            context.setFillColor(CGColor(red: 0.96, green: 0.8, blue: 0.68, alpha: 1))
-            context.fillEllipse(in: CGRect(x: 240 + sin(progress * 12) * 20, y: 140, width: 160, height: 200))
+            let colors = [CGColor(red: 0.98, green: 0.82, blue: 0.66, alpha: 1), CGColor(red: 0.86, green: 0.42, blue: 0.52, alpha: 1)] as CFArray
+            let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors, locations: [0, 1])!
+            context.drawLinearGradient(gradient, start: CGPoint(x: 0, y: size.height), end: CGPoint(x: size.width, y: 0), options: [])
+            let sway = sin(progress * 12) * 8
+            context.setFillColor(CGColor(red: 0.2, green: 0.17, blue: 0.3, alpha: 1))
+            context.fillEllipse(in: CGRect(x: 150 + sway, y: -170, width: 340, height: 330))
+            context.setFillColor(CGColor(red: 0.25, green: 0.18, blue: 0.16, alpha: 1))
+            context.fillEllipse(in: CGRect(x: 232 + sway, y: 200, width: 176, height: 180))
+            context.setFillColor(CGColor(red: 0.95, green: 0.76, blue: 0.64, alpha: 1))
+            context.fillEllipse(in: CGRect(x: 248 + sway, y: 160, width: 144, height: 176))
         }
     }
 
-    private static func text(_ string: String, at point: CGPoint, size: CGFloat, color: CGColor = CGColor(gray: 0.15, alpha: 1), in context: CGContext) {
-        let attributes = [
-            kCTFontAttributeName: CTFontCreateWithName("Helvetica" as CFString, size, nil),
-            kCTForegroundColorAttributeName: color,
-        ] as CFDictionary
-        let line = CTLineCreateWithAttributedString(CFAttributedStringCreate(nil, string as CFString, attributes))
-        context.textPosition = point
-        CTLineDraw(line, context)
+    private struct Canvas {
+        let context: CGContext
+        let height: Double
+
+        func fill(_ rect: CGRect, _ hex: UInt32) {
+            context.setFillColor(color(hex))
+            context.fill(flip(rect))
+        }
+
+        func round(_ rect: CGRect, radius: Double, _ hex: UInt32, stroke: UInt32? = nil) {
+            let path = CGPath(roundedRect: flip(rect), cornerWidth: radius, cornerHeight: radius, transform: nil)
+            context.addPath(path)
+            context.setFillColor(color(hex))
+            context.fillPath()
+            if let stroke {
+                context.addPath(path)
+                context.setStrokeColor(color(stroke))
+                context.setLineWidth(1.5)
+                context.strokePath()
+            }
+        }
+
+        func circle(center: CGPoint, radius: Double, _ hex: UInt32) {
+            context.setFillColor(color(hex))
+            context.fillEllipse(in: flip(CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)))
+        }
+
+        @discardableResult
+        func text(_ string: String, at point: CGPoint, size: Double, weight: NSFont.Weight = .regular, color hex: UInt32) -> Double {
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: size, weight: weight),
+                .foregroundColor: NSColor(cgColor: color(hex))!,
+            ]
+            let line = CTLineCreateWithAttributedString(NSAttributedString(string: string, attributes: attributes))
+            context.textPosition = CGPoint(x: point.x, y: height - point.y)
+            CTLineDraw(line, context)
+            return point.x + CTLineGetTypographicBounds(line, nil, nil, nil)
+        }
+
+        private func flip(_ rect: CGRect) -> CGRect {
+            CGRect(x: rect.minX, y: height - rect.maxY, width: rect.width, height: rect.height)
+        }
+
+        private func color(_ hex: UInt32) -> CGColor {
+            CGColor(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255, alpha: 1)
+        }
     }
 
     private static func draw(size: CGSize, _ body: (CGContext, CGSize) -> Void) -> CVPixelBuffer {
