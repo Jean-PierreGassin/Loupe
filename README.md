@@ -17,20 +17,31 @@ Keystrokes are only timestamped to plan zooms. Loupe never records which keys yo
 
 ## Build
 
-Requires macOS 15 and Xcode 16 or later.
+Requires macOS 15 or later to run, and Xcode 26 (Swift 6.2) or later to build.
 
 ```sh
 ./scripts/bundle.sh        # builds dist/Loupe.app
 open dist/Loupe.app
-swift test                 # zoom planner and render pipeline tests
+swift test                 # model, zoom planner and render pipeline tests
 ```
 
 The first recording asks for Screen Recording, Camera and Microphone access. Accessibility access is optional and
-enables typing zooms. Local builds are ad-hoc signed with a requirement pinned to the bundle identifier, so grants
-survive rebuilds. That requirement trusts any binary with the same identifier, so sign distributed builds with a real
-Developer ID.
+enables typing zooms that follow the text caret.
 
 Recordings live in `~/Movies/Loupe`, exports in `~/Movies/Loupe/Exports`. Set `LOUPE_LIBRARY` to use another folder.
+
+### Signing
+
+By default `bundle.sh` ad-hoc signs the app with a requirement pinned to its bundle identifier, so macOS keeps your
+permission grants across rebuilds. That requirement trusts any local binary with the same identifier, so only use
+these builds on your own Mac.
+
+To sign for distribution, set a Developer ID identity. The app is then signed with the hardened runtime and the
+camera and microphone entitlements, ready for notarization:
+
+```sh
+LOUPE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" ./scripts/bundle.sh
+```
 
 ## Layout
 
@@ -43,3 +54,4 @@ Recordings live in `~/Movies/Loupe`, exports in `~/Movies/Loupe/Exports`. Set `L
 | `Sources/Loupe/Overlays` | Setup panel, camera bubble, countdown and recording controls |
 | `Sources/Loupe/Library` | Recording storage and the library grid |
 | `Sources/Loupe/Editor` | Preview, timeline, inspector and export |
+

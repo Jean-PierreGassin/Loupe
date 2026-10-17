@@ -29,7 +29,7 @@ final class LoupeCompositor: NSObject, AVVideoCompositing, Sendable {
 
     private static let context = CIContext(options: [.cacheIntermediates: false, .name: "Loupe"])
     private let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
-    private let queue = DispatchQueue(label: "app.loupe.compositor", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "io.github.jean-pierregassin.Loupe.compositor", qos: .userInitiated)
     private let lastScreen = Mutex<CIImage?>(nil)
 
     var sourcePixelBufferAttributes: [String: any Sendable]? { Self.pixelAttributes }

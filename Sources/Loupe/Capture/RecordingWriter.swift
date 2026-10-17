@@ -15,7 +15,7 @@ actor RecordingWriter {
         var microphone: Bool
     }
 
-    nonisolated let queue = DispatchSerialQueue(label: "app.loupe.writer", qos: .userInteractive)
+    nonisolated let queue = DispatchSerialQueue(label: "io.github.jean-pierregassin.Loupe.writer", qos: .userInteractive)
     nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
 
     private let writer: AVAssetWriter

@@ -4,7 +4,7 @@ import Synchronization
 final class CameraFeed: @unchecked Sendable {
     let session = AVCaptureSession()
     private let output = AVCaptureVideoDataOutput()
-    private let queue = DispatchQueue(label: "app.loupe.camera")
+    private let queue = DispatchQueue(label: "io.github.jean-pierregassin.Loupe.camera")
     private var device: AVCaptureDevice?
     private let activeDimensions = Mutex<CMVideoDimensions?>(nil)
 

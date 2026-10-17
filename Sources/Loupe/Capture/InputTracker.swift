@@ -26,7 +26,7 @@ import Synchronization
     private var clicks: [Mark] = []
     private var samples: [Mark] = []
     nonisolated private let focus = Mutex(FocusState())
-    private let focusQueue = DispatchQueue(label: "app.loupe.focus", qos: .userInitiated)
+    private let focusQueue = DispatchQueue(label: "io.github.jean-pierregassin.Loupe.focus", qos: .userInitiated)
 
     func start() {
         monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown]) { [weak self] event in
