@@ -18,10 +18,10 @@ enum FocusLocator {
         return share < largestFieldShare ? CGPoint(x: frame.midX, y: frame.midY) : nil
     }
 
-    static func exposeAccessibility(of pid: pid_t) {
+    static func exposeAccessibility(of pid: pid_t, _ exposed: Bool) {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.05)
-        AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+        AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, exposed ? kCFBooleanTrue : kCFBooleanFalse)
     }
 }
 

@@ -1,8 +1,9 @@
 import AppKit
 import LoupeCore
+import Synchronization
 
 @MainActor final class InputTracker {
-    private struct Mark {
+    private struct Mark: Sendable {
         let time: Double
         let location: CGPoint
     }
@@ -10,9 +11,10 @@ import LoupeCore
     private var monitor: Any?
     private var sampler: Task<Void, Never>?
     private var clicks: [Mark] = []
-    private var keys: [Mark] = []
     private var samples: [Mark] = []
     private var exposedApps: Set<pid_t> = []
+    nonisolated private let keys = Mutex<[Mark]>([])
+    private let focusQueue = DispatchQueue(label: "app.loupe.focus", qos: .userInitiated)
 
     func start() {
         monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown]) { [weak self] event in
@@ -38,12 +40,15 @@ import LoupeCore
         monitor.map(NSEvent.removeMonitor)
         monitor = nil
         sampler?.cancel()
+        focusQueue.sync {}
+        let apps = exposedApps
+        focusQueue.async { apps.forEach { FocusLocator.exposeAccessibility(of: $0, false) } }
 
         let normalize = { (location: CGPoint) in
             NormPoint((location.x - display.minX) / display.width, (location.y - display.minY) / display.height)
         }
         let events = clicks.map { InputEvent(t: $0.time - start, kind: .click, position: normalize($0.location)) }
-            + keys.map { InputEvent(t: $0.time - start, kind: .key, position: normalize($0.location)) }
+            + keys.withLock { $0 }.map { InputEvent(t: $0.time - start, kind: .key, position: normalize($0.location)) }
         let cursor = samples.map { CursorSample(t: $0.time - start, position: normalize($0.location)) }
         return (events.filter { $0.t >= 0 }.sorted { $0.t < $1.t }, cursor)
     }
@@ -57,17 +62,13 @@ import LoupeCore
         let pointer = Self.pointer
         let app = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let expose = app.map { exposedApps.insert($0).inserted } ?? false
-        Task.detached(priority: .userInitiated) { [weak self] in
+        focusQueue.async { [self] in
             if expose, let app {
-                FocusLocator.exposeAccessibility(of: app)
+                FocusLocator.exposeAccessibility(of: app, true)
             }
             let location = FocusLocator.textFocus() ?? pointer
-            await self?.append(key: Mark(time: time, location: location))
+            keys.withLock { $0.append(Mark(time: time, location: location)) }
         }
-    }
-
-    private func append(key: Mark) {
-        keys.append(key)
     }
 
     private func sample() {
