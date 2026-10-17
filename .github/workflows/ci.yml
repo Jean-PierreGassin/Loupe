@@ -18,4 +18,4 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: swift test
-      - run: ./scripts/bundle.sh
+      - run: LOUPE_VERSION=0.0.0-ci ./scripts/package.sh

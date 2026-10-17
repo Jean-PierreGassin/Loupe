@@ -28,6 +28,7 @@ jobs:
           NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
           NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
           NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        shell: bash
         run: |
           keychain="$RUNNER_TEMP/signing.keychain-db"
           password="$(uuidgen)"
@@ -39,11 +40,14 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain"
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
           identity="$(security find-identity -v -p codesigning "$keychain" | grep -o '"Developer ID Application[^"]*"' | head -1 | tr -d '"')"
+          [[ -n "$identity" ]] || { echo "::error::DEVELOPER_ID_CERTIFICATE has no Developer ID Application identity"; exit 1; }
           xcrun notarytool store-credentials loupe --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --keychain "$keychain"
           echo "LOUPE_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
           echo "LOUPE_NOTARY_PROFILE=loupe" >> "$GITHUB_ENV"
+          echo "LOUPE_NOTARY_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
       - name: Package
+        shell: bash
         run: |
           LOUPE_VERSION="${LOUPE_VERSION#v}" ./scripts/package.sh
           cd dist && shasum -a 256 Loupe-*.dmg > SHA256SUMS.txt
@@ -51,4 +55,8 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/Loupe-*.dmg dist/SHA256SUMS.txt --title "Loupe ${GITHUB_REF_NAME#v}" --generate-notes
+        shell: bash
+        run: |
+          flags=()
+          [[ "$GITHUB_REF_NAME" == *-* ]] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" dist/Loupe-*.dmg dist/SHA256SUMS.txt --title "Loupe ${GITHUB_REF_NAME#v}" --generate-notes "${flags[@]}"

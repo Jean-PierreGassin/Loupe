@@ -48,7 +48,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key><string>15.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.video</string>
   <key>NSHighResolutionCapable</key><true/>
-  <key>NSHumanReadableCopyright</key><string>MIT License</string>
+  <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Jean-Pierre Gassin. MIT License.</string>
   <key>NSCameraUsageDescription</key><string>Loupe shows your camera in a bubble while you record.</string>
   <key>NSMicrophoneUsageDescription</key><string>Loupe records your voice with your screen.</string>
 </dict>
