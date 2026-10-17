@@ -55,3 +55,10 @@ LOUPE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" ./scripts/
 | `Sources/Loupe/Library` | Recording storage and the library grid |
 | `Sources/Loupe/Editor` | Preview, timeline, inspector and export |
 
+## Contributing
+
+Issues and pull requests are welcome. Run `swift test` before opening a pull request.
+
+## License
+
+[MIT](LICENSE)
