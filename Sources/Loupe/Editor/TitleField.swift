@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TitleField: View {
     @Binding var title: String
-    @State private var draft = ""
+    @State private var original = ""
     @State private var editing = false
     @State private var hovering = false
     @FocusState private var focused: Bool
@@ -10,12 +10,12 @@ struct TitleField: View {
     var body: some View {
         ZStack(alignment: .leading) {
             if editing {
-                TextField("Untitled", text: $draft)
+                TextField("Untitled", text: $title)
                     .textFieldStyle(.plain)
                     .focused($focused)
                     .onAppear { focused = true }
                     .onSubmit { focused = false }
-                    .onExitCommand { draft = title; focused = false }
+                    .onExitCommand { title = original; focused = false }
             } else {
                 Button { begin() } label: {
                     HStack(spacing: 6) {
@@ -41,18 +41,18 @@ struct TitleField: View {
         .onChange(of: focused) { _, isFocused in
             if !isFocused { commit() }
         }
+        .onDisappear(perform: commit)
     }
 
     private func begin() {
-        draft = title
+        original = title
         editing = true
     }
 
     private func commit() {
-        let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            title = trimmed
-        }
+        guard editing else { return }
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        title = trimmed.isEmpty ? original : trimmed
         editing = false
     }
 }
