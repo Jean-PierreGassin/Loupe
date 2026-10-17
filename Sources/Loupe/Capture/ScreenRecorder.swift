@@ -19,8 +19,12 @@ import ScreenCaptureKit
         var hasCamera: Bool
     }
 
+    var onInterruption: ((String) -> Void)?
+
     private let configuration: Configuration
     private let stream: SCStream
+    private let monitor: StreamMonitor
+    private var interruptedAt: CMTime?
     private let writer: RecordingWriter
     private let sink: SampleSink
     private let tracker = InputTracker()
@@ -29,7 +33,7 @@ import ScreenCaptureKit
     private let hasCamera: Bool
 
     static func start(_ configuration: Configuration) async throws -> ScreenRecorder {
-        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
         guard let display = content.displays.first(where: { $0.displayID == configuration.displayID }) else {
             throw RecordingError.displayUnavailable
         }
@@ -57,7 +61,8 @@ import ScreenCaptureKit
             microphone: configuration.microphoneID != nil
         ))
         sink = SampleSink(writer: writer, cameraClock: configuration.camera?.session.synchronizationClock)
-        stream = SCStream(filter: filter, configuration: Self.streamConfiguration(configuration, pixelSize: pixelSize), delegate: nil)
+        monitor = StreamMonitor()
+        stream = SCStream(filter: filter, configuration: Self.streamConfiguration(configuration, pixelSize: pixelSize), delegate: monitor)
         self.configuration = configuration
         self.pixelSize = pixelSize
         hasCamera = cameraSize != nil
@@ -73,12 +78,16 @@ import ScreenCaptureKit
             try stream.addStreamOutput(sink, type: .microphone, sampleHandlerQueue: writer.queue)
         }
         configuration.camera?.deliverFrames(to: sink, on: writer.queue)
+        monitor.onStop = { [weak self] reason, time in
+            self?.interruptedAt = time
+            self?.onInterruption?(reason)
+        }
         tracker.start()
         try await stream.startCapture()
     }
 
     func stop() async throws -> Take {
-        let end = HostClock.now
+        let end = interruptedAt ?? HostClock.now
         try? await stream.stopCapture()
         configuration.camera?.deliverFrames(to: nil, on: nil)
         let start = await writer.sessionStart?.seconds ?? HostClock.now.seconds
@@ -118,6 +127,16 @@ import ScreenCaptureKit
             stream.microphoneCaptureDeviceID = microphoneID
         }
         return stream
+    }
+}
+
+@MainActor private final class StreamMonitor: NSObject, SCStreamDelegate {
+    var onStop: ((String, CMTime) -> Void)?
+
+    nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
+        let time = HostClock.now
+        let reason = error.localizedDescription
+        Task { @MainActor in self.onStop?(reason, time) }
     }
 }
 

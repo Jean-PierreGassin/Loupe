@@ -25,6 +25,7 @@ actor RecordingWriter {
 
     init(url: URL, configuration: Configuration) throws {
         writer = try AVAssetWriter(outputURL: url, fileType: .mov)
+        writer.movieFragmentInterval = CMTime(seconds: 5, preferredTimescale: 600)
         let tracks: [(Track, [String: Any])] = [
             (.screen, Self.screenSettings(configuration.screenSize)),
             configuration.cameraSize.map { (.camera, Self.cameraSettings($0)) },

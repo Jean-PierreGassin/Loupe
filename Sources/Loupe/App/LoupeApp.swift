@@ -1,7 +1,9 @@
 import SwiftUI
 
 @main struct LoupeApp: App {
-    @State private var model = AppModel()
+    @NSApplicationDelegateAdaptor private var delegate: AppDelegate
+
+    private var model: AppModel { delegate.model }
 
     var body: some Scene {
         Window("Loupe", id: "main") {
@@ -25,6 +27,19 @@ import SwiftUI
         } label: {
             Image(systemName: model.phase.isCapturing ? "record.circle.fill" : "record.circle")
         }
+    }
+}
+
+@MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
+    let model = AppModel()
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard model.needsSaveBeforeQuit else { return .terminateNow }
+        Task {
+            await model.saveBeforeQuit()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 }
 

@@ -29,6 +29,7 @@ import LoupeCore
     @ObservationIgnored private lazy var overlays = OverlayController(model: self)
     @ObservationIgnored private var active: (recorder: ScreenRecorder, folder: URL)?
     @ObservationIgnored private var countdown: Task<Void, Never>?
+    @ObservationIgnored private var pendingSave: Task<Void, Never>?
     @ObservationIgnored private var hotKey: GlobalHotKey?
 
     init() {
@@ -36,6 +37,14 @@ import LoupeCore
         if let id = UserDefaults.standard.string(forKey: "openRecording").flatMap(UUID.init), library.recording(with: id) != nil {
             route = .editor(id)
         }
+        Task { await library.recoverInterruptedRecordings() }
+    }
+
+    var needsSaveBeforeQuit: Bool { active != nil || pendingSave != nil }
+
+    func saveBeforeQuit() async {
+        stopRecording()
+        await pendingSave?.value
     }
 
     func toggleRecording() {
@@ -117,6 +126,7 @@ import LoupeCore
                     try? FileManager.default.removeItem(at: folder)
                     return
                 }
+                recorder.onInterruption = { [weak self] reason in self?.captureInterrupted(reason) }
                 active = (recorder, folder)
                 phase = .recording(since: .now)
                 overlays.showControlBar()
@@ -133,7 +143,8 @@ import LoupeCore
         guard case .recording = phase, let active else { return }
         phase = .saving
         self.active = nil
-        Task {
+        pendingSave = Task {
+            defer { pendingSave = nil }
             do {
                 let take = try await active.recorder.stop()
                 let recording = makeRecording(from: take, in: active.folder)
@@ -146,6 +157,11 @@ import LoupeCore
                 fail(error)
             }
         }
+    }
+
+    private func captureInterrupted(_ reason: String) {
+        stopRecording()
+        alert = "Recording stopped early. \(reason)"
     }
 
     func discardRecording() {

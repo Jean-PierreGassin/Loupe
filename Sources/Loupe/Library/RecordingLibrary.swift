@@ -47,6 +47,20 @@ struct Recording: Identifiable, Hashable {
             .sorted { $0.project.createdAt > $1.project.createdAt }
     }
 
+    func recoverInterruptedRecordings() async {
+        let manager = FileManager.default
+        let folders = ((try? manager.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []).filter { folder in
+            manager.fileExists(atPath: folder.appending(path: "recording.mov").path())
+                && !manager.fileExists(atPath: folder.appending(path: "project.json").path())
+        }
+        for folder in folders {
+            guard let project = await Self.recoveredProject(from: folder.appending(path: "recording.mov")) else { continue }
+            let recording = Recording(folder: folder, project: project)
+            await Self.writeThumbnail(for: recording)
+            save(recording)
+        }
+    }
+
     func recording(with id: Recording.ID) -> Recording? {
         recordings.first { $0.id == id }
     }
@@ -89,6 +103,27 @@ struct Recording: Identifiable, Hashable {
 
     func reveal(_ recording: Recording) {
         NSWorkspace.shared.activateFileViewerSelecting([recording.videoURL])
+    }
+
+    nonisolated private static func recoveredProject(from url: URL) async -> Project? {
+        let asset = AVURLAsset(url: url)
+        guard
+            let duration = try? await asset.load(.duration).seconds, duration > 0,
+            let tracks = try? await asset.loadTracks(withMediaType: .video).sorted(by: { $0.trackID < $1.trackID }),
+            let screen = tracks.first,
+            let size = try? await screen.load(.naturalSize)
+        else { return nil }
+        let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .now
+        return Project(
+            title: "Recovered " + created.formatted(date: .abbreviated, time: .shortened),
+            createdAt: created,
+            duration: duration,
+            screenWidth: Int(size.width),
+            screenHeight: Int(size.height),
+            hasCamera: tracks.count > 1,
+            events: [],
+            cursor: []
+        )
     }
 
     nonisolated static func writeThumbnail(for recording: Recording) async {
