@@ -6,7 +6,7 @@ public struct EditableComposition: @unchecked Sendable {
     let screenTrackID: CMPersistentTrackID
     let cameraTrackID: CMPersistentTrackID?
 
-    public init(recording url: URL, project: Project) async throws {
+    public init(recording url: URL, project: Project, mixingAudioTo mixdown: URL? = nil) async throws {
         let source = AVURLAsset(url: url)
         let videoTracks = try await source.loadTracks(withMediaType: .video).sorted { $0.trackID < $1.trackID }
         let audioTracks = try await source.loadTracks(withMediaType: .audio)
@@ -30,8 +30,17 @@ public struct EditableComposition: @unchecked Sendable {
 
         screenTrackID = try await insert(screenTrack)
         cameraTrackID = videoTracks.count > 1 ? try await insert(videoTracks[1]) : nil
-        for track in audioTracks {
-            _ = try await insert(track)
+        if let mixdown, audioTracks.count > 1 {
+            let mixedAsset = AVURLAsset(url: mixdown)
+            if try await AudioMixdown.render(audioTracks, of: source, range: range, to: mixdown),
+               let mixed = try await mixedAsset.loadTracks(withMediaType: .audio).first,
+               let target = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
+                try target.insertTimeRange(try await mixed.load(.timeRange), of: mixed, at: .zero)
+            }
+        } else {
+            for track in audioTracks {
+                _ = try await insert(track)
+            }
         }
         screenSize = try await screenTrack.load(.naturalSize)
         asset = composition

@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreText
+import Testing
 @testable import LoupeCore
 
 enum SyntheticRecording {
@@ -35,6 +36,40 @@ enum SyntheticRecording {
         camera.markAsFinished()
         await writer.finishWriting()
         if let error = writer.error { throw error }
+    }
+
+    static func addingAudioTracks(_ count: Int, to video: URL, output: URL) async throws {
+        let source = AVURLAsset(url: video)
+        let duration = try await source.load(.duration)
+        let composition = AVMutableComposition()
+        for track in try await source.loadTracks(withMediaType: .video) {
+            let target = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+            try target?.insertTimeRange(try await track.load(.timeRange), of: track, at: .zero)
+        }
+        for index in 0..<count {
+            let tone = output.deletingLastPathComponent().appending(path: "tone-\(index).m4a")
+            try writeTone(to: tone, frequency: 220 * Double(index + 1), seconds: duration.seconds)
+            let toneAsset = AVURLAsset(url: tone)
+            let track = try #require(try await toneAsset.loadTracks(withMediaType: .audio).first)
+            let target = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+            try target?.insertTimeRange(try await track.load(.timeRange), of: track, at: .zero)
+        }
+        try? FileManager.default.removeItem(at: output)
+        let session = try #require(AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality))
+        try await session.export(to: output, as: .mov)
+    }
+
+    private static func writeTone(to url: URL, frequency: Double, seconds: Double) throws {
+        let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 1))
+        let frames = AVAudioFrameCount(seconds * format.sampleRate)
+        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames))
+        buffer.frameLength = frames
+        let samples = try #require(buffer.floatChannelData?[0])
+        for frame in 0..<Int(frames) {
+            samples[frame] = Float(sin(2 * .pi * frequency * Double(frame) / format.sampleRate) * 0.2)
+        }
+        let settings: [String: Any] = [AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: format.sampleRate, AVNumberOfChannelsKey: 1]
+        try AVAudioFile(forWriting: url, settings: settings).write(from: buffer)
     }
 
     private static func input(size: CGSize) -> AVAssetWriterInput {

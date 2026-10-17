@@ -24,7 +24,9 @@ public enum Exporter {
         to destination: URL,
         progress: @escaping @Sendable (Double) -> Void
     ) async throws {
-        let editable = try await EditableComposition(recording: recording, project: project)
+        let mixdown = FileManager.default.temporaryDirectory.appending(path: "Loupe-\(UUID().uuidString).m4a")
+        defer { try? FileManager.default.removeItem(at: mixdown) }
+        let editable = try await EditableComposition(recording: recording, project: project, mixingAudioTo: mixdown)
         guard let session = AVAssetExportSession(asset: editable.asset, presetName: AVAssetExportPresetHighestQuality) else {
             throw LoupeError.exportUnavailable
         }

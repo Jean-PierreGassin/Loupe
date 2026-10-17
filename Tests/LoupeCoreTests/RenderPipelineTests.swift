@@ -5,8 +5,12 @@ import Testing
 import UniformTypeIdentifiers
 @testable import LoupeCore
 
-@Suite(.serialized) struct RenderPipelineTests {
+@Suite(.serialized) final class RenderPipelineTests {
     let directory = FileManager.default.temporaryDirectory.appending(path: "LoupeTests-\(UUID().uuidString)")
+
+    deinit {
+        try? FileManager.default.removeItem(at: directory)
+    }
 
     var project: Project {
         let button = NormPoint(1210 / 1440, 188 / 900)
@@ -63,6 +67,24 @@ import UniformTypeIdentifiers
         try await Exporter.export(recording: recording, project: project, quality: .hd, to: output) { _ in }
 
         #expect(abs(try await AVURLAsset(url: output).load(.duration).seconds - 4) < 0.2)
+    }
+
+    @Test func mixesEveryAudioSourceIntoOneTrack() async throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let video = directory.appending(path: "silent.mov")
+        let recording = directory.appending(path: "voiced.mov")
+        let output = directory.appending(path: "voiced.mp4")
+        try await SyntheticRecording.write(to: video, duration: 4)
+        try await SyntheticRecording.addingAudioTracks(2, to: video, output: recording)
+        try #require(try await AVURLAsset(url: recording).loadTracks(withMediaType: .audio).count == 2)
+
+        try await Exporter.export(recording: recording, project: project, quality: .hd, to: output) { _ in }
+
+        let asset = AVURLAsset(url: output)
+        let audio = try await asset.loadTracks(withMediaType: .audio)
+        #expect(audio.count == 1)
+        #expect(abs(try await audio[0].load(.timeRange).duration.seconds - 4) < 0.2)
+        #expect(abs(try await asset.load(.duration).seconds - 4) < 0.2)
     }
 
     private func saveFrames(of asset: AVAsset, at times: [Double]) async throws {
