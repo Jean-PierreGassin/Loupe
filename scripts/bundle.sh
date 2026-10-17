@@ -42,5 +42,5 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-codesign --force --deep --sign - "$app"
+codesign --force --sign - --identifier app.loupe.Loupe --requirements '=designated => identifier "app.loupe.Loupe"' "$app"
 echo "$app"
