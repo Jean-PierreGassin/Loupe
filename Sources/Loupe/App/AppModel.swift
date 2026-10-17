@@ -40,6 +40,10 @@ import LoupeCore
         Task { await library.recoverInterruptedRecordings() }
     }
 
+    var shortcutHint: String? {
+        hotKey == nil ? nil : GlobalHotKey.Shortcut.record.symbol
+    }
+
     var needsSaveBeforeQuit: Bool { active != nil || pendingSave != nil }
 
     func saveBeforeQuit() async {
@@ -126,10 +130,14 @@ import LoupeCore
                     try? FileManager.default.removeItem(at: folder)
                     return
                 }
-                recorder.onInterruption = { [weak self] reason in self?.captureInterrupted(reason) }
                 active = (recorder, folder)
                 phase = .recording(since: .now)
                 overlays.showControlBar()
+                if let reason = recorder.interruption {
+                    captureInterrupted(reason)
+                } else {
+                    recorder.onInterruption = { [weak self] reason in self?.captureInterrupted(reason) }
+                }
             } catch {
                 try? FileManager.default.removeItem(at: folder)
                 throw error
@@ -152,9 +160,12 @@ import LoupeCore
                 library.save(recording)
                 finishSession()
                 open(recording)
-            } catch {
+            } catch RecordingError.noFrames {
                 try? FileManager.default.removeItem(at: active.folder)
+                fail(RecordingError.noFrames)
+            } catch {
                 fail(error)
+                await library.recoverInterruptedRecordings()
             }
         }
     }

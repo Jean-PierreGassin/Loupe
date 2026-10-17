@@ -20,6 +20,7 @@ import ScreenCaptureKit
     }
 
     var onInterruption: ((String) -> Void)?
+    private(set) var interruption: String?
 
     private let configuration: Configuration
     private let stream: SCStream
@@ -80,6 +81,7 @@ import ScreenCaptureKit
         configuration.camera?.deliverFrames(to: sink, on: writer.queue)
         monitor.onStop = { [weak self] reason, time in
             self?.interruptedAt = time
+            self?.interruption = reason
             self?.onInterruption?(reason)
         }
         tracker.start()
