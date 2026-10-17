@@ -26,7 +26,7 @@ swift test                 # model, zoom planner and render pipeline tests
 ```
 
 The first recording asks for Screen Recording, Camera and Microphone access. Accessibility access is optional and
-enables typing zooms that follow the text caret.
+lets Loupe zoom in on the text caret while you type.
 
 Recordings live in `~/Movies/Loupe`, exports in `~/Movies/Loupe/Exports`. Set `LOUPE_LIBRARY` to use another folder.
 
