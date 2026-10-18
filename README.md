@@ -38,7 +38,7 @@ every click and typing burst for you, then exports a polished MP4 ready to share
 
 Loupe needs macOS 15 or later and runs natively on Apple silicon and Intel. Recordings are saved to
 `~/Movies/Loupe` and exports to `~/Movies/Loupe/Exports`. Loupe checks GitHub for new versions once a day and
-installs them in place, keeping your permissions. Use **Loupe → Check for Updates…** to check now.
+offers to install them in place, keeping your permissions. Use **Loupe → Check for Updates…** to check now.
 
 ## Build from source
 

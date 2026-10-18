@@ -63,4 +63,4 @@ To sign releases, add these repository secrets:
 | `NOTARY_TEAM_ID` | Apple Developer team ID, Developer ID only |
 | `NOTARY_PASSWORD` | App-specific password for that Apple ID, Developer ID only |
 
-Without a certificate, releases are ad-hoc signed and don't update themselves.
+Releases fail without a certificate, so every published build can update itself.
