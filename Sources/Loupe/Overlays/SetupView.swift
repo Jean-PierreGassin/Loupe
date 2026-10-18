@@ -15,14 +15,14 @@ struct SetupView: View {
                     SourceRow(
                         icon: "video.fill",
                         title: "Camera",
-                        selection: Binding(get: { setup.cameraID }, set: setup.chooseCamera),
+                        selection: Binding(get: { setup.cameraID }, set: { setup.chooseCamera($0) }),
                         options: [(nil, "No camera")] + setup.cameras.map { ($0.id, $0.name) }
                     )
                     Divider().overlay(.hairline)
                     SourceRow(
                         icon: "mic.fill",
                         title: "Microphone",
-                        selection: Binding(get: { setup.microphoneID }, set: setup.chooseMicrophone),
+                        selection: Binding(get: { setup.microphoneID }, set: { setup.chooseMicrophone($0) }),
                         options: [(nil, "No microphone")] + setup.microphones.map { ($0.id, $0.name) }
                     )
                     Divider().overlay(.hairline)
