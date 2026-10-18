@@ -64,8 +64,8 @@ struct InspectorView: View {
             }
         } else {
             InspectorSection("Zoom") {
-                InspectorToggle("Auto zoom on clicks and typing", isOn: Binding(get: { editor.project.autoZoom }, set: editor.setAutoZoom))
-                LabeledSlider("Default depth", value: Binding(get: { editor.project.defaultZoomScale }, set: editor.setDefaultZoomScale), in: 1.25...3.5, format: "%.1f×")
+                InspectorToggle("Auto zoom on clicks and typing", isOn: Binding(get: { editor.project.autoZoom }, set: { editor.setAutoZoom($0) }))
+                LabeledSlider("Default depth", value: Binding(get: { editor.project.defaultZoomScale }, set: { editor.setDefaultZoomScale($0) }), in: 1.25...3.5, format: "%.1f×")
                 Text(zoomSummary)
                     .font(.caption)
                     .foregroundStyle(.tertiaryText)
