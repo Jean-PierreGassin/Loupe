@@ -24,6 +24,7 @@ import LoupeCore
     let library = RecordingLibrary()
     let setup = CaptureSetup()
     let camera = CameraFeed()
+    let updater = Updater()
 
     @ObservationIgnored let mainWindow = MainWindow()
     @ObservationIgnored private lazy var overlays = OverlayController(model: self)
@@ -38,6 +39,7 @@ import LoupeCore
             route = .editor(id)
         }
         Task { await library.recoverInterruptedRecordings() }
+        updater.startChecking()
     }
 
     var shortcutHint: String? {
@@ -62,7 +64,7 @@ import LoupeCore
     }
 
     func beginSetup() {
-        guard phase == .idle else { return }
+        guard phase == .idle, updater.state != .installing else { return }
         setup.refresh()
         phase = .setup
         mainWindow.hide()
@@ -194,6 +196,24 @@ import LoupeCore
 
     func showLibrary() {
         route = .library
+    }
+
+    func checkForUpdates() {
+        mainWindow.show()
+        updater.checkNow()
+    }
+
+    func installUpdate(_ release: Release) {
+        updater.install(release) { [weak self] in self?.relaunchForUpdate() }
+    }
+
+    func relaunchForUpdate() {
+        guard case let .installed(version) = updater.state else { return }
+        if phase == .idle, library.exportsInProgress == 0 {
+            Updater.relaunch()
+        } else {
+            updater.prompt = .installed(version)
+        }
     }
 
     private func makeRecording(from take: ScreenRecorder.Take, in folder: URL) -> Recording {

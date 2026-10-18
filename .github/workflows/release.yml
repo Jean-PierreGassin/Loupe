@@ -12,7 +12,7 @@ jobs:
     runs-on: macos-26
     env:
       LOUPE_VERSION: ${{ github.ref_name }}
-      HAS_SIGNING: ${{ secrets.DEVELOPER_ID_CERTIFICATE != '' }}
+      HAS_SIGNING: ${{ secrets.SIGNING_CERTIFICATE != '' }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -20,11 +20,11 @@ jobs:
 
       - run: swift test
 
-      - name: Import Developer ID certificate
+      - name: Import signing certificate
         if: env.HAS_SIGNING == 'true'
         env:
-          CERTIFICATE: ${{ secrets.DEVELOPER_ID_CERTIFICATE }}
-          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
+          CERTIFICATE_PASSWORD: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
           NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
           NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
           NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
@@ -37,14 +37,17 @@ jobs:
           security unlock-keychain -p "$password" "$keychain"
           echo "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
           security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
           security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain"
-          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
-          identity="$(security find-identity -v -p codesigning "$keychain" | grep -o '"Developer ID Application[^"]*"' | head -1 | tr -d '"')"
-          [[ -n "$identity" ]] || { echo "::error::DEVELOPER_ID_CERTIFICATE has no Developer ID Application identity"; exit 1; }
-          xcrun notarytool store-credentials loupe --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --keychain "$keychain"
+          identity="$(security find-identity -p codesigning "$keychain" | sed -n 's/^ *1) [0-9A-F]* "\([^"]*\)".*/\1/p' | head -1)"
+          [[ -n "$identity" ]] || { echo "::error::SIGNING_CERTIFICATE has no code signing identity"; exit 1; }
           echo "LOUPE_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
-          echo "LOUPE_NOTARY_PROFILE=loupe" >> "$GITHUB_ENV"
-          echo "LOUPE_NOTARY_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+          echo "LOUPE_SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+          if [[ "$identity" == "Developer ID Application"* && -n "$NOTARY_APPLE_ID" ]]; then
+            xcrun notarytool store-credentials loupe --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --keychain "$keychain"
+            echo "LOUPE_NOTARY_PROFILE=loupe" >> "$GITHUB_ENV"
+            echo "LOUPE_NOTARY_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+          fi
 
       - name: Package
         shell: bash

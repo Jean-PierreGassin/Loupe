@@ -19,7 +19,10 @@ rm -f "$dmg"
 hdiutil create -volname "Loupe" -srcfolder "$stage" -fs HFS+ -format ULFO -quiet "$dmg"
 
 if [[ -n "${LOUPE_SIGNING_IDENTITY:-}" ]]; then
-  codesign --force --timestamp --sign "$LOUPE_SIGNING_IDENTITY" "$dmg"
+  sign_args=(--force --sign "$LOUPE_SIGNING_IDENTITY")
+  [[ "$LOUPE_SIGNING_IDENTITY" == "Developer ID Application"* ]] && sign_args+=(--timestamp)
+  [[ -n "${LOUPE_SIGNING_KEYCHAIN:-}" ]] && sign_args+=(--keychain "$LOUPE_SIGNING_KEYCHAIN")
+  codesign "${sign_args[@]}" "$dmg"
   if [[ -n "${LOUPE_NOTARY_PROFILE:-}" ]]; then
     keychain=()
     [[ -n "${LOUPE_NOTARY_KEYCHAIN:-}" ]] && keychain=(--keychain "$LOUPE_NOTARY_KEYCHAIN")

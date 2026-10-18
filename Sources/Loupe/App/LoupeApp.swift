@@ -15,6 +15,12 @@ import SwiftUI
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1320, height: 840)
         .commands {
+            if model.updater.isEnabled {
+                CommandGroup(after: .appInfo) {
+                    UpdateMenuItem()
+                        .environment(model)
+                }
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Recording", action: model.toggleRecording)
                     .keyboardShortcut("r", modifiers: [.option, .shift, .command])
@@ -60,6 +66,9 @@ private struct MenuBarContent: View {
         }
         Divider()
         Button("Open Loupe") { model.mainWindow.show() }
+        if model.updater.isEnabled {
+            UpdateMenuItem()
+        }
         Button("Quit Loupe") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
@@ -97,6 +106,28 @@ private struct RootView: View {
         } message: {
             Text(model.alert ?? "")
         }
+        .alert(model.updater.prompt?.title ?? "", isPresented: updatePresented, presenting: model.updater.prompt) { prompt in
+            switch prompt {
+            case let .available(release, version):
+                Button("Install and Relaunch") { model.installUpdate(release) }
+                Button("Skip This Version") { model.updater.skip(version) }
+                Button("Later", role: .cancel) {}
+            case .installed:
+                Button("Relaunch Now") { Updater.relaunch() }
+                Button("Later", role: .cancel) {}
+            case .upToDate, .failed:
+                Button("OK", role: .cancel) {}
+            }
+        } message: { prompt in
+            Text(prompt.message)
+        }
+    }
+
+    private var updatePresented: Binding<Bool> {
+        Binding(
+            get: { model.updater.prompt != nil && model.phase == .idle && model.alert == nil },
+            set: { if !$0 { model.updater.prompt = nil } }
+        )
     }
 
     private var alertPresented: Binding<Bool> {
@@ -105,6 +136,43 @@ private struct RootView: View {
 
     private var saveFailurePresented: Binding<Bool> {
         Binding(get: { model.library.saveFailure != nil }, set: { if !$0 { model.library.saveFailure = nil } })
+    }
+}
+
+private extension Updater.Prompt {
+    var title: String {
+        switch self {
+        case .available: "A new version of Loupe is available"
+        case .upToDate: "You're up to date"
+        case let .installed(version): "Loupe \(version) is installed"
+        case .failed: "Couldn't update Loupe"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case let .available(_, version): "Loupe \(version) is ready to install. Your recordings and permissions stay as they are."
+        case let .upToDate(version): "Loupe \(version) is the latest version."
+        case .installed: "Relaunch to start using it. Relaunching now stops any export in progress."
+        case let .failed(reason): reason
+        }
+    }
+}
+
+private struct UpdateMenuItem: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        switch model.updater.state {
+        case .installed:
+            Button("Relaunch to Update", action: model.relaunchForUpdate)
+        case .installing:
+            Button("Installing Update…") {}
+                .disabled(true)
+        case .idle, .checking:
+            Button("Check for Updates…", action: model.checkForUpdates)
+                .disabled(model.updater.state != .idle)
+        }
     }
 }
 

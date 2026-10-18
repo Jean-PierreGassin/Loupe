@@ -156,6 +156,8 @@ import LoupeCore
 
     private func export(quality: ExportQuality) async {
         player.pause()
+        library.exportsInProgress += 1
+        defer { library.exportsInProgress -= 1 }
         let id = UUID()
         exportID = id
         exportState = .exporting(0)

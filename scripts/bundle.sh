@@ -3,7 +3,9 @@ set -euo pipefail
 
 # LOUPE_VERSION            version string, defaults to 0.0.0-dev
 # LOUPE_DISTRIBUTION=1     universal binary, signed per build instead of pinned to the identifier
-# LOUPE_SIGNING_IDENTITY   Developer ID identity; implies a distribution build with the hardened runtime
+# LOUPE_SIGNING_IDENTITY   signing identity, a Developer ID or a stable self-signed certificate; implies a distribution
+#                          build that updates itself
+# LOUPE_SIGNING_KEYCHAIN   keychain holding that identity when it isn't on the search list
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 app="$root/dist/Loupe.app"
@@ -11,6 +13,8 @@ identifier="io.github.jean-pierregassin.Loupe"
 version="${LOUPE_VERSION:-0.0.0-dev}"
 build="$(git -C "$root" rev-list --count HEAD 2>/dev/null || echo 1)"
 work="$(mktemp -d)"
+updates="<false/>"
+[[ -n "${LOUPE_SIGNING_IDENTITY:-}" ]] && updates="<true/>"
 trap 'rm -rf "$work"' EXIT
 
 build_args=(--package-path "$root" -c release)
@@ -51,12 +55,16 @@ cat > "$app/Contents/Info.plist" <<PLIST
   <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Jean-Pierre Gassin. MIT License.</string>
   <key>NSCameraUsageDescription</key><string>Loupe shows your camera in a bubble while you record.</string>
   <key>NSMicrophoneUsageDescription</key><string>Loupe records your voice with your screen.</string>
+  <key>LoupeUpdatesEnabled</key>$updates
 </dict>
 </plist>
 PLIST
 
 if [[ -n "${LOUPE_SIGNING_IDENTITY:-}" ]]; then
-  codesign --force --options runtime --timestamp --entitlements "$root/scripts/Loupe.entitlements" --sign "$LOUPE_SIGNING_IDENTITY" "$app"
+  sign_args=(--force --options runtime --entitlements "$root/scripts/Loupe.entitlements" --sign "$LOUPE_SIGNING_IDENTITY")
+  [[ "$LOUPE_SIGNING_IDENTITY" == "Developer ID Application"* ]] && sign_args+=(--timestamp)
+  [[ -n "${LOUPE_SIGNING_KEYCHAIN:-}" ]] && sign_args+=(--keychain "$LOUPE_SIGNING_KEYCHAIN")
+  codesign "${sign_args[@]}" "$app"
 elif [[ -n "${LOUPE_DISTRIBUTION:-}" ]]; then
   codesign --force --sign - --identifier "$identifier" "$app"
 else

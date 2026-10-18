@@ -15,6 +15,7 @@ struct Recording: Identifiable, Hashable {
 @MainActor @Observable final class RecordingLibrary {
     private(set) var recordings: [Recording] = []
     var saveFailure: String?
+    var exportsInProgress = 0
 
     let root: URL
     var exportsFolder: URL { root.appending(path: "Exports") }
