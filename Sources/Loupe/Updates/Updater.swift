@@ -60,7 +60,7 @@ import AppKit
     }
 
     func install(_ release: Release, then relaunch: @escaping @MainActor () -> Void) {
-        guard state == .idle, let current else { return }
+        guard state == .idle || state == .checking, let current else { return }
         state = .installing
         Task {
             do {
@@ -85,7 +85,7 @@ import AppKit
             return
         }
         state = .checking
-        defer { state = .idle }
+        defer { if state == .checking { state = .idle } }
         do {
             let release = try await latestRelease()
             defaults.set(Date.now, forKey: Self.lastCheckKey)

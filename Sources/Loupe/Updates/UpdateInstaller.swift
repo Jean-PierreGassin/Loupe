@@ -78,7 +78,8 @@ struct UpdateInstaller {
         try await Self.run("/usr/bin/hdiutil", "attach", image.path, "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", mount.path, "-quiet")
         do {
             let source = mount.appending(path: "Loupe.app")
-            guard FileManager.default.fileExists(atPath: source.path) else { throw UpdateError.missingApp }
+            let kind = try? source.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            guard kind?.isDirectory == true, kind?.isSymbolicLink == false else { throw UpdateError.missingApp }
             try FileManager.default.copyItem(at: source, to: destination)
             try? await Self.run("/usr/bin/hdiutil", "detach", mount.path, "-force", "-quiet")
         } catch {

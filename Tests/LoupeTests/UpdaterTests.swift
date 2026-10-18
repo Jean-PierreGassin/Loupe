@@ -68,6 +68,19 @@ import Testing
         #expect(UpdateInstaller.version(of: installed) == AppVersion("1.0"))
     }
 
+    @Test func refusesALinkedApp() async throws {
+        let installed = try makeApp(at: root.appending(path: "Applications/Loupe.app"), identifier: "test.loupe", version: "1.0")
+        let elsewhere = try makeApp(at: root.appending(path: "Elsewhere/Loupe.app"), identifier: "test.loupe", version: "2.0")
+        let folder = root.appending(path: "Linked")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: folder.appending(path: "Loupe.app"), withDestinationURL: elsewhere)
+
+        await #expect(throws: UpdateError.missingApp) {
+            try await self.installer(for: installed).install(from: self.makeDiskImage(containing: folder.appending(path: "Loupe.app")), newerThan: #require(AppVersion("1.0")))
+        }
+        #expect(UpdateInstaller.version(of: installed) == AppVersion("1.0"))
+    }
+
     @Test func refusesUnsignedCode() throws {
         let app = try makeApp(at: root.appending(path: "Unsigned/Loupe.app"), identifier: "test.loupe", version: "1.0", signed: false)
 
