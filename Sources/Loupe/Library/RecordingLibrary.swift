@@ -51,8 +51,8 @@ struct Recording: Identifiable, Hashable {
     func recoverInterruptedRecordings() async {
         let manager = FileManager.default
         let folders = ((try? manager.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []).filter { folder in
-            manager.fileExists(atPath: folder.appending(path: "recording.mov").path())
-                && !manager.fileExists(atPath: folder.appending(path: "project.json").path())
+            manager.fileExists(atPath: folder.appending(path: "recording.mov").path(percentEncoded: false))
+                && !manager.fileExists(atPath: folder.appending(path: "project.json").path(percentEncoded: false))
         }
         for folder in folders {
             guard let project = await Self.recoveredProject(from: folder.appending(path: "recording.mov")) else { continue }
@@ -99,7 +99,7 @@ struct Recording: Identifiable, Hashable {
         let base = cleaned.isEmpty ? "Untitled" : cleaned
         return (1...).lazy
             .map { self.exportsFolder.appending(path: $0 == 1 ? "\(base).mp4" : "\(base) \($0).mp4") }
-            .first { !FileManager.default.fileExists(atPath: $0.path()) }!
+            .first { !FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) }!
     }
 
     func reveal(_ recording: Recording) {

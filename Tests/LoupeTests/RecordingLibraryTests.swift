@@ -17,8 +17,8 @@ import Testing
         #expect(library.exportDestination(for: "Q3: launch/plan?").lastPathComponent == "Q3- launch-plan-.mp4")
         #expect(library.exportDestination(for: " .. ").lastPathComponent == "Untitled.mp4")
 
-        FileManager.default.createFile(atPath: library.exportDestination(for: "Demo").path(), contents: Data())
-        #expect(library.exportDestination(for: "Demo").lastPathComponent == "Demo 2.mp4")
+        FileManager.default.createFile(atPath: library.exportDestination(for: "Team demo").path(percentEncoded: false), contents: Data())
+        #expect(library.exportDestination(for: "Team demo").lastPathComponent == "Team demo 2.mp4")
     }
 
     @Test func savedRecordingsReloadNewestFirst() throws {

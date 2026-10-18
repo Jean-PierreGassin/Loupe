@@ -32,7 +32,7 @@ struct RecordingCard: View {
             Button("Move to Trash", role: .destructive) { model.library.trash(recording) }
         }
         .task(id: recording.thumbnailURL) {
-            if !FileManager.default.fileExists(atPath: recording.thumbnailURL.path()) {
+            if !FileManager.default.fileExists(atPath: recording.thumbnailURL.path(percentEncoded: false)) {
                 await RecordingLibrary.writeThumbnail(for: recording)
             }
             thumbnail = NSImage(contentsOf: recording.thumbnailURL)
