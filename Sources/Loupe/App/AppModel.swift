@@ -181,7 +181,8 @@ import LoupeCore
         guard case .recording = phase, let active else { return }
         phase = .saving
         self.active = nil
-        Task {
+        pendingSave = Task {
+            defer { pendingSave = nil }
             await active.recorder.discard()
             try? FileManager.default.removeItem(at: active.folder)
             finishSession()
