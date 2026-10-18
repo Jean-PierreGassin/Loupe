@@ -40,6 +40,11 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain"
           identity="$(security find-identity -p codesigning "$keychain" | sed -n 's/^ *1) [0-9A-F]* "\([^"]*\)".*/\1/p' | head -1)"
           [[ -n "$identity" ]] || { echo "::error::SIGNING_CERTIFICATE has no code signing identity"; exit 1; }
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          if [[ "$identity" != "Developer ID Application"* ]]; then
+            security find-certificate -c "$identity" -p "$keychain" > "$RUNNER_TEMP/certificate.pem"
+            sudo security add-trusted-cert -d -r trustRoot -p codeSign -k "$keychain" "$RUNNER_TEMP/certificate.pem"
+          fi
           echo "LOUPE_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
           echo "LOUPE_SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
           if [[ "$identity" == "Developer ID Application"* && -n "$NOTARY_APPLE_ID" ]]; then
